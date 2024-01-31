@@ -78,3 +78,41 @@ class Pipeline:
             batch = p.process(batch)
         
         return batch
+    
+class PipelineConfiguration:
+    def __init__(self, 
+                 train: [IPipe] = [],
+                 val: [IPipe] = [], 
+                 test: [IPipe] = []):
+        self.train_pipes = train
+        self.val_pipes = val
+        self.test_pipes = test
+    
+    def get_pipe_by_stage(self, stage: str):
+        assert stage == "train" or stage == "val" or stage == "test"
+
+        if stage == "train":
+            return self.train_pipes
+        elif stage == "val":
+            return self.val_pipes
+        else:
+            return self.test_pipes
+        
+class SamplerConfiguration:
+    def __init__(self, 
+                 train: ISampler,
+                 val: ISampler, 
+                 test: ISampler):
+        self.train_sampler = train
+        self.val_sampler = val
+        self.test_sampler = test
+
+    def get_sampler_by_stage(self, stage: str):
+        assert stage == "train" or stage == "val" or stage == "test"
+
+        if stage == "train":
+            return self.train_pipes
+        elif stage == "val":
+            return self.val_pipes
+        else:
+            return self.test_pipes
