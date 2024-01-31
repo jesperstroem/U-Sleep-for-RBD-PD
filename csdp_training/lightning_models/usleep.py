@@ -5,6 +5,7 @@ import torch
 from csdp_training.lightning_models.base import Base_Lightning
 from csdp_training.utility import log_test_step
 from ml_architectures.usleep.usleep import USleep
+from csdp_pipeline.pipeline_elements.pipe import IBatch
 
 class USleep_Lightning(Base_Lightning):
     def __init__(
@@ -112,19 +113,26 @@ class USleep_Lightning(Base_Lightning):
         votes = votes.to(device)
         
         return votes
-
-    def training_step(self, batch, _):
-        x_eeg, x_eog, ybatch, _ = batch
-
-        assert len(x_eeg.shape) == 3
-        assert x_eeg.shape[1] == 1
+    
+    def prep_batch(self, x_eeg, x_eog):
+        assert len(x_eeg.shape) == 3, "EEG shape must be on the form (batch_size, num_channels, data)"
+        assert x_eeg.shape[1] == 1, "Only one EEG channel allowed"
 
         if self.include_eog == True:
-            assert len(x_eog.shape) == 3
-            assert x_eog.shape[1] == 1
+            assert len(x_eog.shape) == 3, "EOG shape must be on the form (batch_size, num_channels, data)"
+            assert x_eog.shape[1] == 1, "Only one EOG channel allowed"
             xbatch = torch.cat((x_eeg, x_eog), dim=1)
         else:
             xbatch = x_eeg
+
+        return xbatch
+
+    def training_step(self, batch: IBatch, _):
+        x_eeg = batch.eeg
+        x_eog = batch.eog
+        ybatch = batch.labels
+
+        xbatch = self.prep_batch(x_eeg, x_eog)
 
         pred = self(xbatch)
         
@@ -134,20 +142,14 @@ class USleep_Lightning(Base_Lightning):
 
         return step_loss
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch: IBatch, _):
         # Step per record
-        x_eeg, x_eog, ybatch, _ = batch
+        x_eeg = batch.eeg
+        x_eog = batch.eog
+        ybatch = batch.labels
 
-        assert len(x_eeg.shape) == 3
-        assert x_eeg.shape[1] == 1
-
-        if self.include_eog == True:
-            assert len(x_eog.shape) == 3
-            assert x_eog.shape[1] == 1
-            xbatch = torch.cat((x_eeg, x_eog), dim=1)
-        else:
-            xbatch = x_eeg
-
+        xbatch = self.prep_batch(x_eeg, x_eog)
+        
         pred = self(xbatch)
         
         step_loss, step_acc, step_kap, step_f1 = self.compute_train_metrics(pred, ybatch)
@@ -167,9 +169,11 @@ class USleep_Lightning(Base_Lightning):
         self.validation_labels.append(ybatch)
         self.validation_preds.append(pred)
                 
-    def test_step(self, batch, _):
+    def test_step(self, batch: IBatch, _):
         # Step per record
-        x_eeg, x_eog, ybatch, meta = batch
+        x_eeg = batch.eeg
+        x_eog = batch.eog
+        ybatch = batch.labels
 
         assert len(x_eeg.shape) == 3
         ybatch = torch.flatten(ybatch)
@@ -182,8 +186,8 @@ class USleep_Lightning(Base_Lightning):
 
         log_test_step("results",
                       self.logger.version, 
-                      dataset=meta["dataset"][0],
-                      subject=meta["subject"][0],
-                      record=meta["record"][0], 
+                      dataset=batch.tags[0].dataset,
+                      subject=batch.tags[0].subject,
+                      record=batch.tags[0].record, 
                       channel_pred=channels_pred,
                       labels=ybatch)

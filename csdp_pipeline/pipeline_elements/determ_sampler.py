@@ -12,16 +12,13 @@ import math
 import json
 import numpy as np
 
-from csdp_pipeline.pipeline_elements.pipe import IPipe
-from csdp_pipeline.pipeline_elements.pipeline_dataset import PipelineDataset
-from torch.utils.data import DataLoader
+from csdp_pipeline.pipeline_elements.pipe import IPipe, ISample, ITag, ISampler
 
-class Determ_sampler(IPipe):
+class Determ_sampler(ISampler):
     def __init__(self,
                  base_file_path, 
                  datasets,
                  split_type, 
-                 num_epochs, 
                  split_file = None,
                  subject_percentage: float = 1.0,
                  get_all_channels = False):
@@ -31,18 +28,17 @@ class Determ_sampler(IPipe):
         self.split_file = split_file
         self.subject_percentage = subject_percentage
         self.records = self.list_records()
-        print(f"Number of {split_type} records: {len(self.records)}")
-        self.epoch_length = num_epochs
+        self.num_samples = len(self.records)
         self.get_all_channels = get_all_channels
 
-    def process(self, index):
-        x_eeg, x_eog, label, tag = self.__get_sample(index)
+    def get_sample(self, index: int):
+        sample: ISample = self.__get_sample(index)
 
-        if any(dim == 0 for dim in x_eog.shape):
+        if any(dim == 0 for dim in sample.eog.shape):
             print("Found no EOG channel, duplicating EEG instead")
-            x_eog = x_eeg
+            sample.eog = sample.eeg
 
-        return x_eeg, x_eog, label, tag
+        return sample
 
     def list_records(self):
         list_of_records = []
@@ -82,7 +78,7 @@ class Determ_sampler(IPipe):
 
         return list_of_records
 
-    def __get_sample(self, index):
+    def __get_sample(self, index: int) -> ISample:
         r = self.records[index]
 
         dataset = r[0]
@@ -96,17 +92,17 @@ class Determ_sampler(IPipe):
 
             eeg_data, eog_data, eeg_tag, eog_tag = self.__load_data(hdf5, subject, rec, psg_channels)
 
-        tag = {
-            "dataset": dataset,
-            "subject": subject,
-            "record": rec,
-            "eeg": eeg_tag,
-            "eog": eog_tag
-        }
+        sample = ISample(index)
+        sample.eeg = eeg_data
+        sample.eog = eog_data
+        sample.labels = torch.tensor(y)
+        sample.tag = ITag(dataset,
+                                  subject,
+                                  rec,
+                                  eeg_tag,
+                                  eog_tag)
 
-        y = torch.tensor(y)
-
-        return eeg_data, eog_data, y, tag
+        return sample
     
     def determine_single_key(self, keys):
         if len(keys) > 0:

@@ -1,20 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from csdp_pipeline.pipeline_elements.sampler import Sampler
 from csdp_pipeline.pipeline_elements.resampler import Resampler
 from csdp_pipeline.pipeline_elements.spectrogram import Spectrogram
 from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
+from csdp_pipeline.pipeline_elements.pipe import IPipe
 
 class IPipeline_Factory(ABC):
     @abstractmethod
-    def create_training_pipeline(self):
-        pass
-
-    @abstractmethod
-    def create_validation_pipeline(self):
-        pass
-
-    @abstractmethod
-    def create_test_pipeline(self):
+    def pipes_for_stage(self, stage: str) -> [IPipe]:
         pass
 
 class USleep_Pipeline_Factory(IPipeline_Factory):
@@ -32,47 +25,24 @@ class USleep_Pipeline_Factory(IPipeline_Factory):
         self.testsets = testsets
         self.sub_percentage = sub_percentage
 
-    def create_training_pipeline(self):
-        train_pipes = [
-            Sampler(
-                self.hdf5_base_path,
-                self.trainsets,
-                split_type="train",
-                num_epochs=35,
-                split_file_path=self.split_path,
-                subject_percentage=self.sub_percentage,
-            )
-        ]
-        return train_pipes
-
-    def create_validation_pipeline(self):
-        val_pipes = [
-            Determ_sampler(
-                self.hdf5_base_path,
-                self.valsets,
-                split_type="val",
-                num_epochs=35,
-                split_file=self.split_path,
-                subject_percentage=self.sub_percentage
-            ),
+        self.train_pipes = [
         ]
 
-        return val_pipes
-
-    def create_test_pipeline(self):
-        test_pipes = [
-            Determ_sampler(
-                self.hdf5_base_path,
-                self.testsets,
-                split_type="test",
-                num_epochs=35,
-                split_file=self.split_path,
-                get_all_channels=True
-            ),
+        self.val_pipes = [
         ]
 
-        return test_pipes
+        self.test_pipes = [
+        ]
 
+    def pipes_for_stage(self, stage: str) -> [IPipe]:
+        assert stage == "train" or stage == "val" or stage == "test"
+
+        if stage == "train":
+            return self.train_pipes
+        elif stage == "val":
+            return self.val_pipes
+        else:
+            return self.test_pipes
 
 class LSeqSleepNet_Pipeline_Factory(IPipeline_Factory):
     def __init__(

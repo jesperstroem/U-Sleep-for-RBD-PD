@@ -150,7 +150,10 @@ class Base_Lightning(pl.LightningModule):
         self.log('val_f1_c4', mean_f1c4, batch_size=batch_size, rank_zero_only=True)
 
         cm = plot_confusionmatrix(cm, "")
-        self.logger.experiment["training/val_cm"].append(stringify_unsupported(cm))
+        try:
+            self.logger.experiment["training/val_cm"].append(stringify_unsupported(cm))
+        except:
+            print("Could not upload confusion matrix, possibly because the chosen logging framework does not support it")
 
         self.validation_step_loss.clear()
         self.validation_step_acc.clear()

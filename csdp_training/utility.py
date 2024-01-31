@@ -123,7 +123,6 @@ def create_split_file(hdf5_basepath):
             output_dic[dataset_name]["test"] = test
 
     json_object = json.dumps(output_dic, indent=4)
-    print(json_object)
 
     with open("random_split.json", 'w') as fp:
         fp.write(json_object)

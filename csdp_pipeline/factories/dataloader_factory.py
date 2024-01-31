@@ -5,8 +5,12 @@ from csdp_pipeline.factories.pipeline_factory import (
     USleep_Pipeline_Factory,
     LSeqSleepNet_Pipeline_Factory,
 )
+from csdp_pipeline.pipeline_elements.pipe import IBatch, ISample, Pipeline
+from csdp_pipeline.pipeline_elements.sampler import Sampler
+from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
 from csdp_training.utility import create_split_file
 import json
+from functools import partial
 
 class IDataloader_Factory(ABC):
     def __init__(self, data_split_path, hdf5_base_path, create_random_split):
@@ -34,7 +38,17 @@ class IDataloader_Factory(ABC):
         pass
 
 
-class USleep_Dataloader_Factory(IDataloader_Factory):    
+class USleep_Dataloader_Factory(IDataloader_Factory):  
+    def preprocess(self, data: IBatch, stage: str):
+        preprocessing_pipes = self.fac.pipes_for_stage(stage)
+        pipeline = Pipeline(preprocessing_pipes)
+        return pipeline.preprocess(data)
+
+    def custom_collate_fn(self, data: [ISample], stage):
+        batch = IBatch(data)
+        batch = self.preprocess(batch, stage=stage)
+        return batch
+
     def __init__(
         self,
         gradient_steps: int,
@@ -62,6 +76,12 @@ class USleep_Dataloader_Factory(IDataloader_Factory):
 
         self.gradient_steps = gradient_steps
         self.batch_size = batch_size
+        self.hdf5_base_path = hdf5_base_path
+        self.trainsets = trainsets
+        self.valsets = valsets
+        self.testsets = testsets
+        self.sub_percentage = sub_percentage
+        self.data_split_path = data_split_path
 
         self.fac = USleep_Pipeline_Factory(
             hdf5_base_path, self.data_split_path, trainsets, valsets, testsets, sub_percentage = sub_percentage
@@ -77,16 +97,27 @@ class USleep_Dataloader_Factory(IDataloader_Factory):
             DataLoader: The training dataloader. When drawing samples from this dataloader, the data will be served with 4 values - (eeg_data, eog_data, labels, tags).
         """
 
-        pipes = self.fac.create_training_pipeline()
-        dataset = PipelineDataset(pipes, self.gradient_steps * self.batch_size)
+        sampler = Sampler(
+                self.hdf5_base_path,
+                self.trainsets,
+                split_type="train",
+                num_epochs=35,
+                split_file_path=self.data_split_path,
+                subject_percentage=self.sub_percentage,
+        )
+
+        dataset = PipelineDataset(sampler,
+                                  self.gradient_steps * self.batch_size)
 
         trainloader = DataLoader(
             dataset,
             batch_size=self.batch_size,
+            collate_fn=partial(self.custom_collate_fn, stage="train"),
             shuffle=False,
             num_workers=num_workers,
             pin_memory=True,
         )
+
         return trainloader
 
     def create_validation_loader(self, num_workers=1) -> DataLoader:
@@ -98,11 +129,18 @@ class USleep_Dataloader_Factory(IDataloader_Factory):
         Returns:
             DataLoader: The validation dataloader. When drawing samples from this dataloader, the data will be served with 4 values - (eeg_data, eog_data, labels, tags).
         """
-        pipes = self.fac.create_validation_pipeline()
-        dataset = PipelineDataset(pipes, len(pipes[0].records))
+        sampler = Determ_sampler(
+                self.hdf5_base_path,
+                self.valsets,
+                split_type="val",
+                split_file=self.data_split_path,
+                get_all_channels= False,
+            )
+
+        dataset = PipelineDataset(sampler, sampler.num_samples)
         
         valloader = DataLoader(
-            dataset, batch_size=1, shuffle=False, num_workers=num_workers
+            dataset, batch_size=1, shuffle=False, num_workers=num_workers, collate_fn=partial(self.custom_collate_fn, stage="val"),
         )
         return valloader
 
@@ -115,11 +153,19 @@ class USleep_Dataloader_Factory(IDataloader_Factory):
         Returns:
             DataLoader: The testing dataloader. When drawing samples from this dataloader, the data will be served with 4 values - (eeg_data, eog_data, labels, tags).
         """
-        pipes = self.fac.create_test_pipeline()
-        dataset = PipelineDataset(pipes=pipes, iterations=len(pipes[0].records))
+        sampler = Determ_sampler(
+                self.hdf5_base_path,
+                self.valsets,
+                split_type="test",
+                split_file=self.data_split_path,
+                get_all_channels= True,
+            )
+        
+        dataset = PipelineDataset(sampler, 
+                                  iterations=sampler.num_samples)
 
         testloader = DataLoader(
-            dataset, batch_size=1, shuffle=False, num_workers=num_workers
+            dataset, batch_size=1, shuffle=False, num_workers=num_workers, collate_fn=partial(self.custom_collate_fn, stage="test"),
         )
         return testloader
 

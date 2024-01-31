@@ -10,19 +10,16 @@ import numpy as np
 import h5py
 import math
 import json
+from csdp_pipeline.pipeline_elements.pipe import ISampler, ISample, ITag
 
-from csdp_pipeline.pipeline_elements.pipe import IPipe
-
-class Sampler(IPipe):
+class Sampler(ISampler):
     def __init__(self,
                  base_file_path, 
                  datasets,
                  split_type, 
                  num_epochs,
                  split_file_path = None, 
-                 subject_percentage = 1,
-                 eeg_picker_func = None, 
-                 eog_picker_func = None):
+                 subject_percentage = 1):
         self.base_file_path = base_file_path
         self.datasets = datasets
         self.split_type = split_type
@@ -33,15 +30,13 @@ class Sampler(IPipe):
 
         self.probs = self.calc_probs()
         self.epoch_length = num_epochs
-
-        self.eeg_picker_func = eeg_picker_func
-        self.eog_picker_func = eog_picker_func
+        self.num_samples = 0
         
-    def process(self, index):
+    def get_sample(self, index: int) -> ISample:
         success = False
             
         while not success:
-            sample = self.__get_sample()
+            sample: ISample = self.__get_sample()
 
             if sample != None:
                 success = True
@@ -65,7 +60,7 @@ class Sampler(IPipe):
 
         return probs
     
-    def __get_sample(self):
+    def __get_sample(self) -> ISample:
         
         possible_sets = self.datasets
         probs = self.probs
@@ -92,10 +87,9 @@ class Sampler(IPipe):
             psg = list(hdf5[r_subject][r_record]["psg"].keys())
 
             try:
-                eeg = self.eeg_picker_func(psg) if self.eeg_picker_func != None else self.__pick_random_channel(psg, "EEG")
-                eog = self.eog_picker_func(psg) if self.eog_picker_func != None else self.__pick_random_channel(psg, "EOG")
+                eeg = self.__pick_random_channel(psg, "EEG")
+                eog = self.__pick_random_channel(psg, "EOG")
             except:
-                #print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
                 return None
 
             # Choose random index of a random label
@@ -140,17 +134,19 @@ class Sampler(IPipe):
         x_eeg = x_eeg.unsqueeze(0)
         x_eog = x_eog.unsqueeze(0)
 
-        tag = {
-            "dataset": r_dataset,
-            "subject": r_subject,
-            "record": r_record,
-            "eeg": eeg,
-            "eog": eog,
-            "start_idx": x_start_index,
-            "end_idx": x_start_index+(self.epoch_length*30*128)
-        }
+        sample = ISample(-1)
+        sample.eeg = x_eeg
+        sample.eog = x_eog
+        sample.labels = y
+        sample.tag = ITag(r_dataset,
+                                  r_subject,
+                                  r_record,
+                                  eeg,
+                                  eog,
+                                  x_start_index,
+                                  x_start_index+(self.epoch_length*30*128))
         
-        return x_eeg, x_eog, y, tag
+        return sample
 
     def __pick_random_channel(self, channel_list, type):
         #Choose random eeg and eog
