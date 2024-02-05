@@ -111,8 +111,8 @@ class SamplerConfiguration:
         assert stage == "train" or stage == "val" or stage == "test"
 
         if stage == "train":
-            return self.train_pipes
+            return self.train_sampler
         elif stage == "val":
-            return self.val_pipes
+            return self.val_sampler
         else:
-            return self.test_pipes
+            return self.test_sampler
