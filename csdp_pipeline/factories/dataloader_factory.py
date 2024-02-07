@@ -9,7 +9,6 @@ from csdp_pipeline.pipeline_elements.pipe import IBatch, ISample, Pipeline, IPip
 from csdp_pipeline.pipeline_elements.sampler import Sampler
 from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
 from csdp_training.utility import create_split_file
-import json
 from functools import partial
 
 class IDataloader_Factory(ABC):
@@ -25,7 +24,7 @@ class IDataloader_Factory(ABC):
     def testing_loader(self, num_workers):
         pass
 
-class Dataloader_Factory(IDataloader_Factory):
+class Dataloader_Wrapper(IDataloader_Factory):
     def preprocess(self, data: IBatch, stage: str):
         preprocessing_pipes = self.pipe_configuration.get_pipe_by_stage(stage)
         pipeline = Pipeline(preprocessing_pipes)
@@ -38,8 +37,7 @@ class Dataloader_Factory(IDataloader_Factory):
 
     def __init__(
         self,
-        gradient_steps: int,
-        batch_size: int,
+        training_batch_size: int,
         samplers: SamplerConfiguration,
         preprocessing_pipes: PipelineConfiguration = PipelineConfiguration(),
     ):
@@ -55,10 +53,9 @@ class Dataloader_Factory(IDataloader_Factory):
             create_random_split (bool, optional): If set to True, a random split json file will be created and used for data-loading. Defaults to False.
         """
 
-        self.gradient_steps = gradient_steps
-        self.batch_size = batch_size
         self.pipe_configuration = preprocessing_pipes
         self.samplers = samplers
+        self.training_batch_size = training_batch_size
 
     def training_loader(self,
                         num_workers=1) -> DataLoader:
@@ -71,12 +68,11 @@ class Dataloader_Factory(IDataloader_Factory):
             DataLoader: The training dataloader. When drawing samples from this dataloader, the data will be served with 4 values - (eeg_data, eog_data, labels, tags).
         """
 
-        dataset = PipelineDataset(self.samplers.get_sampler_by_stage("train"),
-                                  self.gradient_steps * self.batch_size)
+        dataset = PipelineDataset(self.samplers.get_sampler_by_stage("train"))
 
         trainloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
+            batch_size=self.training_batch_size,
             collate_fn=partial(self.custom_collate_fn, stage="train"),
             shuffle=False,
             num_workers=num_workers,
@@ -98,8 +94,7 @@ class Dataloader_Factory(IDataloader_Factory):
 
         sampler = self.samplers.get_sampler_by_stage("val")
 
-        dataset = PipelineDataset(sampler, 
-                                  sampler.num_samples)
+        dataset = PipelineDataset(sampler)
         
         valloader = DataLoader(
             dataset, batch_size=1, shuffle=False, num_workers=num_workers, collate_fn=partial(self.custom_collate_fn, stage="val"),
@@ -119,12 +114,12 @@ class Dataloader_Factory(IDataloader_Factory):
 
         sampler = self.samplers.get_sampler_by_stage("test")
 
-        dataset = PipelineDataset(sampler, 
-                                  iterations=sampler.num_samples)
+        dataset = PipelineDataset(sampler)
 
         testloader = DataLoader(
             dataset, batch_size=1, shuffle=False, num_workers=num_workers, collate_fn=partial(self.custom_collate_fn, stage="test"),
         )
+
         return testloader
 
 class DefaultUSleepDataloader(IDataloader_Factory):

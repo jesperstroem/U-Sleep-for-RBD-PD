@@ -11,9 +11,9 @@ class ITag:
     end_idx: str
 
     def __init__(self,
-                 dataset: str,
-                 subject: str,
-                 record : str,
+                 dataset: str = "",
+                 subject: str = "",
+                 record : str = "",
                  eeg = "",
                  eog = "",
                  start_idx = -1,

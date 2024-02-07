@@ -12,13 +12,13 @@ class USleep_Lightning(Base_Lightning):
         self,
         lr,
         batch_size,
-        initial_filters,
-        complexity_factor,
-        progression_factor,
-        lr_patience,
-        lr_factor,
-        lr_minimum,
-        loss_weights,
+        initial_filters = 5,
+        complexity_factor = 1.67,
+        progression_factor = 2,
+        lr_patience = 50,
+        lr_factor = 0.5,
+        lr_minimum = 0.0000001,
+        loss_weights = None,
         include_eog = True,
     ):
         num_channels = 2 if include_eog == True else 1
@@ -115,6 +115,7 @@ class USleep_Lightning(Base_Lightning):
         return votes
     
     def prep_batch(self, x_eeg, x_eog):
+
         assert len(x_eeg.shape) == 3, "EEG shape must be on the form (batch_size, num_channels, data)"
         assert x_eeg.shape[1] == 1, "Only one EEG channel allowed"
 
@@ -168,7 +169,16 @@ class USleep_Lightning(Base_Lightning):
         
         self.validation_labels.append(ybatch)
         self.validation_preds.append(pred)
-                
+
+    def run_test(self, 
+                 trainer, 
+                 net, 
+                 loader,
+                 output_folder_prefix):
+        
+        self.output_folder_prefix = output_folder_prefix
+        _ = trainer.test(net, loader)
+
     def test_step(self, batch: IBatch, _):
         # Step per record
         x_eeg = batch.eeg
@@ -180,14 +190,14 @@ class USleep_Lightning(Base_Lightning):
         
         if self.include_eog == True:
             assert len(x_eog.shape) == 3
-            channels_pred = self.channels_prediction(x_eeg, x_eog)
+            channels_pred: torch.Tensor = self.channels_prediction(x_eeg, x_eog)
         else:
-            channels_pred = self.channels_prediction_EEGONLY(x_eeg)
+            channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg)
 
         log_test_step("results",
-                      self.logger.version, 
+                      self.output_folder_prefix, 
                       dataset=batch.tags[0].dataset,
                       subject=batch.tags[0].subject,
                       record=batch.tags[0].record, 
-                      channel_pred=channels_pred,
-                      labels=ybatch)
+                      channel_pred=channels_pred.to("cpu"),
+                      labels=ybatch.to("cpu"))
