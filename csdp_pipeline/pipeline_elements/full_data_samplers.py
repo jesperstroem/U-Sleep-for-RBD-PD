@@ -1,36 +1,34 @@
-from csdp_pipeline.pipeline_elements.pipe import IPipe, ISampler, ISample, ITag
+from csdp_pipeline.pipeline_elements.pipe import ISampler, ISample, ITag
 import h5py
-import json
 import torch
 import math
 import random
 import numpy as np
 import os
+from csdp_pipeline.pipeline_elements.pipe import Split, Dataset_Split
 
 class Full_Eval_Dataset_Sampler(ISampler):
     def __init__(self,
-                dataset_path: str,
-                split_data: dict,
+                split_data: Split,
                 split_type: str = "val"):
         
         assert split_type == "val" or split_type == "test"
 
         self.split_type = split_type
-        self.dataset_path = dataset_path
         self.split_data = split_data
         self.samples  = self.__get_data()
         self.num_samples = len(self.samples)
         
     def get_sample(self, index) -> ISample:
         return self.samples[index]
+    
+    def __read_dataset(self, dataset_split: Dataset_Split):
+        dataset_path = dataset_split.dataset_filepath
+        subs = dataset_split.val if self.split_type == "val" else dataset_split.test
 
-    def __get_data(self):
-        sets = self.split_data[self.dataset_path]
-        subs = sets[self.split_type]
+        samples: list[ISample] = []
 
-        samples: [ISample] = []
-        
-        with h5py.File(self.dataset_path, "r") as hdf5:
+        with h5py.File(dataset_path, "r") as hdf5:
             for subj_key in subs:
                 try:
                     subj = hdf5[subj_key]
@@ -73,26 +71,32 @@ class Full_Eval_Dataset_Sampler(ISampler):
                         sample.eeg = eeg_data
                         sample.eog = eog_data
                         sample.labels = hyp
-                        sample.tag = ITag(dataset=os.path.basename(self.dataset_path),
+                        sample.tag = ITag(dataset=os.path.basename(dataset_path),
                                           subject=subj_key,
                                           record=rec_key)
 
                         samples.append(sample)
 
                 except:
-                    print(f"Did not find subject {subj_key} in dataset {self.dataset_path} with split type {self.split_type}")
+                    print(f"Did not find subject {subj_key} in dataset {dataset_path} with split type {self.split_type}")
                     continue
-    
+
         return samples
+
+    def __get_data(self):
+        all_samples: list[ISample] = []
+
+        for dataset_split in self.split_data.dataset_splits:
+            all_samples.extend(self.__read_dataset(dataset_split))
+    
+        return all_samples
 
 class Full_Train_Dataset_Sampler(ISampler):
     def __init__(self,
-                 file_path: str,
                  window_size: int,
-                 splitdata: dict):
+                 splitdata: Split):
         
         self.window_length = window_size
-        self.file_path = file_path
         self.splitdata = splitdata
         self.eegs, self.eogs, self.hyp, self.window_counts, self.data_indexes = self.__get_data()
 
@@ -151,61 +155,63 @@ class Full_Train_Dataset_Sampler(ISampler):
         return sample
     
     def __get_data(self):
-        with h5py.File(self.file_path, "r") as hdf5:
-            sets = self.splitdata[self.file_path]
-            subs = sets["train"]
+        record_eegs = []
+        record_eogs = []
+        record_hyps = []
+        window_count = [0]
+        data_indexes = []
 
-            record_eegs = []
-            record_eogs = []
-            record_hyps = []
-            window_count = [0]
-            data_indexes = []
+        record_counter = 0
 
-            record_counter = 0
-            
-            for subj_key in subs:
-                subj = hdf5[subj_key]
+        for split in self.splitdata.dataset_splits:
+            file_path = split.dataset_filepath
+            subs = split.train
 
-                rec_keys = subj.keys()
+            with h5py.File(file_path, "r") as hdf5:
+                
+                for subj_key in subs:
+                    subj = hdf5[subj_key]
 
-                for rec_key in rec_keys:
-                    rec = subj[rec_key]
+                    rec_keys = subj.keys()
 
-                    hyp = rec["hypnogram"][()]
-                    psg = rec["psg"]
+                    for rec_key in rec_keys:
+                        rec = subj[rec_key]
 
-                    psg_keys = psg.keys()
+                        hyp = rec["hypnogram"][()]
+                        psg = rec["psg"]
 
-                    eeg_keys = list(filter(lambda x: "EEG" in x, psg_keys))
-                    eog_keys = list(filter(lambda x: "EOG" in x, psg_keys))
+                        psg_keys = psg.keys()
 
-                    eeg_data = []
-                    eog_data = []
+                        eeg_keys = list(filter(lambda x: "EEG" in x, psg_keys))
+                        eog_keys = list(filter(lambda x: "EOG" in x, psg_keys))
 
-                    for c in eeg_keys:
-                        channel_data = psg[c][()]
+                        eeg_data = []
+                        eog_data = []
 
-                        whole_windows = math.floor(len(channel_data)/128/30/self.window_length)
+                        for c in eeg_keys:
+                            channel_data = psg[c][()]
 
-                        eeg_data.append(channel_data)
+                            whole_windows = math.floor(len(channel_data)/128/30/self.window_length)
 
-                    for c in eog_keys:
+                            eeg_data.append(channel_data)
+
+                        for c in eog_keys:
+                            
+                            channel_data = psg[c][()]
+
+                            whole_windows = math.floor(len(channel_data)/128/30/self.window_length)
+
+                            eog_data.append(channel_data)
                         
-                        channel_data = psg[c][()]
+                        record_eegs.append(torch.tensor(np.array(eeg_data)))
+                        record_eogs.append(torch.tensor(np.array(eog_data)))
+                        
+                        record_hyps.append(torch.tensor(hyp, dtype=torch.int64))
 
-                        whole_windows = math.floor(len(channel_data)/128/30/self.window_length)
+                        window_count.append(whole_windows+window_count[-1])
 
-                        eog_data.append(channel_data)
-                    
-                    record_eegs.append(torch.tensor(np.array(eeg_data)))
-                    record_eogs.append(torch.tensor(np.array(eog_data)))
-                    
-                    record_hyps.append(torch.tensor(hyp, dtype=torch.int64))
+                        data_indexes = data_indexes + ([record_counter] * whole_windows)
 
-                    window_count.append(whole_windows+window_count[-1])
-
-                    data_indexes = data_indexes + ([record_counter] * whole_windows)
-
-                    record_counter += 1
+                        record_counter += 1
   
         return record_eegs, record_eegs, record_hyps, window_count, data_indexes

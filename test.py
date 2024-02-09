@@ -1,4 +1,4 @@
-from csdp_training.experiments.loso import LOSO_Experiment
+from csdp_training.experiments.loso import LOSO_Experiment, create_loso_split
 from csdp_training.lightning_models.usleep import USleep_Lightning
 from csdp_pipeline.pipeline_elements.pipe import IBatch, IPipe, PipelineConfiguration
 import torch
@@ -17,6 +17,15 @@ class Channel_Picker(IPipe):
         return x 
 
 def main():
+
+    # split = create_loso_split(["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5",
+    #                            "C:/Users/au588953/Big_Sleep_Set/sedf_st(c).hdf5"],
+    #                            num_validation_subjects=4)
+
+    # print("hej")
+
+
+
     logging_run = neptune.init_run(project=project,
                                    api_token=api_key,
                                    name=name,
@@ -31,12 +40,13 @@ def main():
                                                 checkpoint_path="C:/Users/au588953/Git Repos/CSDP/weights/best-usleep.ckpt")
 
     loso = LOSO_Experiment(base_net=net,
-                           dataset_path="C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5",
+                           dataset_paths=["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5",
+                                          "C:/Users/au588953/Big_Sleep_Set/sedf_st(c).hdf5"],
                            training_epochs=1,
                            batch_size=64,
                            pipeline_configuration=pipeline_configuration,
-                           neptune_run=logging_run,
-                           test_first=True)
+                           neptune_run=None,
+                           test_first=False)
 
     loso.run_training()
 

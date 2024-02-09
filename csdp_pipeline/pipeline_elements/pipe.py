@@ -1,6 +1,29 @@
 from abc import ABC, abstractmethod, abstractproperty
 import torch
 
+class Dataset_Split():
+    dataset_filepath: str
+    train: list[str]
+    val: list[str]
+    test: list[str]
+
+    def __init__(self,
+                 dataset_filepath: str,
+                 train: list[str] = [],
+                 val: list[str] = [],
+                 test: list[str] = []):
+        self.dataset_filepath = dataset_filepath
+        self.train = train
+        self.val = val
+        self.test = test
+
+class Split():
+    dataset_splits: list[Dataset_Split]
+
+    def __init__(self,
+                 dataset_splits: list[Dataset_Split] = []):
+        self.dataset_splits = dataset_splits
+
 class ITag:
     dataset: str
     subject: str
