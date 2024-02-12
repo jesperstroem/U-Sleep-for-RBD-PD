@@ -6,6 +6,7 @@ from csdp_training.lightning_models.base import Base_Lightning
 from csdp_training.utility import log_test_step
 from ml_architectures.usleep.usleep import USleep
 from csdp_pipeline.pipeline_elements.pipe import IBatch
+import pytorch_lightning as pl
 
 class USleep_Lightning(Base_Lightning):
     def __init__(
@@ -171,19 +172,26 @@ class USleep_Lightning(Base_Lightning):
         self.validation_preds.append(pred)
 
     def run_test(self, 
-                 trainer, 
+                 trainer: pl.Trainer, 
                  net, 
                  loader,
-                 output_folder_prefix):
+                 output_folder_prefix,
+                 load_best_model = True):
         
         self.output_folder_prefix = output_folder_prefix
-        _ = trainer.test(net, loader)
+
+        if load_best_model == True:
+            _ = trainer.test(net, loader, ckpt_path="best")
+        else:
+            _ = trainer.test(net, loader)
 
     def test_step(self, batch: IBatch, _):
         # Step per record
         x_eeg = batch.eeg
         x_eog = batch.eog
         ybatch = batch.labels
+
+        assert len(batch.tags) == 1
 
         assert len(x_eeg.shape) == 3
         ybatch = torch.flatten(ybatch)

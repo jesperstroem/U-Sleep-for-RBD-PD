@@ -1,13 +1,11 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import Logger
 import torch
 import h5py
 from sklearn.model_selection import train_test_split
-from csdp_pipeline.pipeline_elements.full_data_samplers import Full_Eval_Dataset_Sampler, Full_Train_Dataset_Sampler
-from csdp_pipeline.pipeline_elements.pipeline_dataset import PipelineDataset
+from csdp_pipeline.pipeline_elements.sampler import Sampler
+from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
 from csdp_pipeline.pipeline_elements.pipe import PipelineConfiguration, SamplerConfiguration
-from torch.utils.data import DataLoader
 from csdp_pipeline.factories.dataloader_factory import Dataloader_Wrapper
 from csdp_training.lightning_models.usleep import USleep_Lightning
 from copy import deepcopy
@@ -51,13 +49,22 @@ def create_loso_split(dataset_filepaths: list[str],
 
         for file in dataset_filepaths:
             dataset_split = Dataset_Split(file)
-            dataset_split.train = filter(lambda x: file == x[0], train)
-            dataset_split.val = filter(lambda x: file == x[0], val)
-            dataset_split.test = [test_sub]
+            dataset_split.train = [x[1] for x in list(filter(lambda x: file == x[0], train))]
+            dataset_split.val = [x[1] for x in list(filter(lambda x: file == x[0], val))]
+            dataset_split.test = [test_sub[1]] if test_sub[0] == file else []
 
             split_data.dataset_splits.append(dataset_split)
         
         all_split_data.append(split_data)
+
+    # isExist = os.path.exists("splits")
+
+    # if not isExist:
+    #     os.makedirs("splits")
+
+    # for i, split in enumerate(all_split_data):
+    #     with open(f"splits/split{i}.json", "w") as outfile: 
+    #         json.dump(split.get_dict(), outfile)
 
     return all_split_data
 
@@ -65,18 +72,25 @@ class LOSO_Experiment:
     def __create_wrapper(self,
                          split: Split,
                          batch_size):
-        val_sampler = Full_Eval_Dataset_Sampler(self.dataset_paths,
-                                                split_data=split,
-                                                split_type="val")
+        # val_sampler = Full_Eval_Dataset_Sampler(split_data=split,
+        #                                         split_type="val")
 
-        train_sampler = Full_Train_Dataset_Sampler(self.dataset_paths,
-                                                   window_size=35,
-                                                   splitdata=split)
+        # train_sampler = Full_Train_Dataset_Sampler(window_size=35,
+        #                                            splitdata=split)
 
-        test_sampler = Full_Eval_Dataset_Sampler(self.dataset_paths,
-                                                 split_data=split,
-                                                 split_type="test")
+        # test_sampler = Full_Eval_Dataset_Sampler(split_data=split,
+        #                                          split_type="test")
+
+        train_sampler = Sampler(split,
+                                split_type="train",
+                                num_epochs=35,
+                                num_iterations=batch_size*1)
         
+        val_sampler = Determ_sampler(split,
+                                     split_type="val")
+        
+        test_sampler = Determ_sampler(split,
+                                      split_type="test")
 
         samplers = SamplerConfiguration(train_sampler,
                                         val_sampler,
@@ -127,22 +141,23 @@ class LOSO_Experiment:
             self.__test(trainer, wrapper, base_net, split_name="Global Test")
 
         for split in self.split_data:
-            split_name = filter(lambda x: "EEG" in x, split)
+            f = list(filter(lambda x: len(x.test) > 0, split.dataset_splits))
+            split_name = f[0].test[0]
 
             wrapper = self.__create_wrapper(split, self.batch_size)
             trainer = self.__init_trainer(max_epochs=self.training_epochs,
-                                          split_name=split[self.dataset_path]['test'][0])
+                                          split_name=split_name)
 
             base_net = deepcopy(self.base_net)
 
-            net = self.__train(base_net,
-                               wrapper,
-                               trainer)
+            net, trainer = self.__train(base_net,
+                                         wrapper,
+                                         trainer)
 
             self.__test(trainer,
                         wrapper,
                         net=net,
-                        split_name=split[self.dataset_path]['test'][0])
+                        split_name=split_name)
 
     def __train(self,
                 net: USleep_Lightning,
@@ -154,9 +169,7 @@ class LOSO_Experiment:
 
         trainer.fit(net, train_loader, val_loader)
 
-        # TODO: LOAD THE BEST MODEL BEFORE RETURNING
-
-        return net
+        return net, trainer
 
 
     def __test(self,
@@ -176,6 +189,7 @@ class LOSO_Experiment:
                        split_name) -> pl.Trainer:
         
         checkpoint_callback = ModelCheckpoint(filename=f"best-{split_name}", monitor="valKap", mode="max")
+       
         callbacks = [checkpoint_callback]
 
         if self.neptune_run != None:

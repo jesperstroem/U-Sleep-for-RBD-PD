@@ -6,26 +6,21 @@ Created on Fri Feb 17 10:25:31 2023
 """
 
 import torch
-
+import os
 import h5py
 import math
-import json
 import numpy as np
 
-from csdp_pipeline.pipeline_elements.pipe import IPipe, ISample, ITag, ISampler
+from csdp_pipeline.pipeline_elements.pipe import IPipe, ISample, ITag, ISampler, Split, Dataset_Split
 
 class Determ_sampler(ISampler):
     def __init__(self,
-                 base_file_path, 
-                 datasets,
-                 split_type, 
-                 split_file = None,
+                 split_data: Split,
+                 split_type: str,
                  subject_percentage: float = 1.0,
                  get_all_channels = False):
-        self.base_file_path = base_file_path
-        self.datasets = datasets
         self.split_type = split_type
-        self.split_file = split_file
+        self.split_data = split_data
         self.subject_percentage = subject_percentage
         self.records = self.list_records()
         self.num_samples = len(self.records)
@@ -42,29 +37,28 @@ class Determ_sampler(ISampler):
 
     def list_records(self):
         list_of_records = []
+        datasets = self.split_data.dataset_splits
 
-        for f in self.datasets:
-            with h5py.File(f"{self.base_file_path}/{f}.hdf5", "r") as hdf5:
+        for f in datasets:
+            with h5py.File(f.dataset_filepath, "r") as hdf5:
                 
-                if self.split_file != None:
-                    with open(self.split_file, "r") as splitfile:
-                        splitdata = json.load(splitfile)
+                # if self.split_file != None:
+                #     with open(self.split_file, "r") as splitfile:
+                #         splitdata = json.load(splitfile)
 
-                        try:
-                            sets = splitdata[f]
-                            subjects = sets[self.split_type]
-                        except:
-                            print(f"Could not find configured split for dataset {f} and splittype {self.split_type}. All subjects are sampled.")
-                            subjects = list(hdf5.keys())
-                else:
-                    subjects = list(hdf5.keys())
+                #         try:
+                #             sets = splitdata[f]
+                #             subjects = sets[self.split_type]
+                #         except:
+                #             print(f"Could not find configured split for dataset {f} and splittype {self.split_type}. All subjects are sampled.")
+                #             subjects = list(hdf5.keys())
+                # else:
+                #     subjects = list(hdf5.keys())
+                subjects = f.get_subjects_from_string(self.split_type)
                 
                 num_subjects = len(subjects)
                 num_subjects_to_use = math.ceil(num_subjects*self.subject_percentage)
                 subjects = subjects[0:num_subjects_to_use]
-                
-                if len(subjects) == 0:
-                    raise ValueError(f"No subjects in split type: {self.split_type}")
                 
                 for s in subjects:
                     try:
@@ -74,8 +68,11 @@ class Determ_sampler(ISampler):
                         continue
 
                     for r in records:
-                        list_of_records.append((f,s,r))
+                        list_of_records.append((f.dataset_filepath,s,r))
 
+        if len(list_of_records) == 0:
+            raise ValueError(f"No subjects in split type: {self.split_type}")
+        
         return list_of_records
 
     def __get_sample(self, index: int) -> ISample:
@@ -85,7 +82,7 @@ class Determ_sampler(ISampler):
         subject = r[1]
         rec = r[2]
 
-        with h5py.File(f"{self.base_file_path}/{dataset}.hdf5", "r") as hdf5:
+        with h5py.File(dataset, "r") as hdf5:
             y = hdf5[subject][rec]["hypnogram"][()]
 
             psg_channels = list(hdf5[subject][rec]["psg"].keys())
@@ -96,11 +93,11 @@ class Determ_sampler(ISampler):
         sample.eeg = eeg_data
         sample.eog = eog_data
         sample.labels = torch.tensor(y)
-        sample.tag = ITag(dataset,
-                                  subject,
-                                  rec,
-                                  eeg_tag,
-                                  eog_tag)
+        sample.tag = ITag(os.path.basename(dataset),
+                          subject,
+                          rec,
+                          eeg_tag,
+                          eog_tag)
 
         return sample
     

@@ -13,6 +13,7 @@ setup(
         "csdp_pipeline.pipeline_elements",
         "csdp_pipeline.preprocessing",
         "csdp_training",
+        "csdp_training.experiments",
         "csdp_training.lightning_models",
         "csdp_training.lightning_models.factories",
         "csdp_datastore",

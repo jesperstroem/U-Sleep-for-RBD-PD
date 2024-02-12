@@ -16,13 +16,29 @@ class Dataset_Split():
         self.train = train
         self.val = val
         self.test = test
+    
+    def get_subjects_from_string(self, str):
+        if str == "train":
+            return self.train
+        elif str == "val":
+            return self.val
+        else:
+            return self.test
 
 class Split():
     dataset_splits: list[Dataset_Split]
 
-    def __init__(self,
-                 dataset_splits: list[Dataset_Split] = []):
-        self.dataset_splits = dataset_splits
+    def __init__(self):
+        self.dataset_splits = []
+
+    def get_dict(self):
+        dic = dict()
+        
+        for split in self.dataset_splits:
+            dic[split.dataset_filepath] = {"train": split.train,
+                                           "val": split.val,
+                                           "test": split.test}    
+        return dic
 
 class ITag:
     dataset: str

@@ -10,27 +10,24 @@ import numpy as np
 import h5py
 import math
 import json
-from csdp_pipeline.pipeline_elements.pipe import ISampler, ISample, ITag
+from csdp_pipeline.pipeline_elements.pipe import ISampler, ISample, ITag, Split, Dataset_Split
 
 class Sampler(ISampler):
     def __init__(self,
-                 base_file_path, 
-                 datasets,
-                 split_type, 
-                 num_epochs,
-                 split_file_path = None, 
+                 split_data: Split,
+                 split_type: str, 
+                 num_epochs: int, 
+                 num_iterations: int,
                  subject_percentage = 1):
-        self.base_file_path = base_file_path
-        self.datasets = datasets
         self.split_type = split_type
-        self.split_file = split_file_path
+        self.split_data = split_data
         self.subject_percentage = subject_percentage
         self.subjects, self.num_records = self.__list_files()
         print(f"Number of {split_type} subjects: {len(self.subjects)} records: {self.num_records} - subject percentage: {subject_percentage}")
 
         self.probs = self.calc_probs()
         self.epoch_length = num_epochs
-        self.num_samples = 0
+        self.num_samples = num_iterations
         
     def get_sample(self, index: int) -> ISample:
         success = False
@@ -44,12 +41,12 @@ class Sampler(ISampler):
         return sample
     
     def calc_probs(self):
-        total_num_datasets = len(self.datasets)
+        total_num_datasets = len(self.split_data.dataset_splits)
         total_num_records = sum(self.num_records)
         
         probs = []
         
-        for i, _ in enumerate(self.datasets):
+        for i, _ in enumerate(self.split_data.dataset_splits):
             num_records = self.num_records[i]
             
             strat_prob = num_records/total_num_records
@@ -62,20 +59,24 @@ class Sampler(ISampler):
     
     def __get_sample(self) -> ISample:
         
-        possible_sets = self.datasets
+        possible_sets = self.split_data.dataset_splits
         probs = self.probs
         
          # Choose random dataset
-        r_dataset = np.random.choice(possible_sets, 1, p=probs)[0]
-        index = possible_sets.index(r_dataset)
+        r_dataset: Dataset_Split = np.random.choice(possible_sets, 1, p=probs)[0]
 
-        subjects = self.subjects[index]
+        # index = possible_sets.index(r_dataset)
+
+        # subjects = self.subjects[index]
+
+        subjects = r_dataset.get_subjects_from_string(self.split_type)
+
         r_subject = np.random.choice(subjects, 1)[0]
 
         if len(subjects) == 0:
             raise ValueError(f"No subjects in split type: {self.split_type} for dataset {r_dataset}")
 
-        with h5py.File(f"{self.base_file_path}/{r_dataset}.hdf5", "r") as hdf5:
+        with h5py.File(r_dataset.dataset_filepath, "r") as hdf5:
 
             # Choose random subject
             records = list(hdf5[r_subject].keys())
@@ -159,25 +160,12 @@ class Sampler(ISampler):
     def __list_files(self):
         subjects = []
         num_records = []
-        base_path = self.base_file_path
         
-        for f in self.datasets:
-            with h5py.File(base_path+"/"+f"{f}.hdf5", "r") as hdf5:
-                
-                if self.split_file != None:
-                    with open(self.split_file, "r") as splitfile:
-                        splitdata = json.load(splitfile)
-                        
-                        try:
-                            # Trý finding the correct split
-                            sets = splitdata[f]
-                            subs = sets[self.split_type]
-                        except:
-                            # If none is configured, take all subjects
-                            print("Could not find configured split")
-                            exit()
-                else:
-                    subs = list(hdf5.keys())
+        for f in self.split_data.dataset_splits:
+            file_path = f.dataset_filepath
+
+            with h5py.File(file_path, "r") as hdf5:
+                subs = f.get_subjects_from_string(self.split_type)
                     
                 num_subjects = len(subs)
                 num_subjects_to_use = math.ceil(num_subjects*self.subject_percentage)
