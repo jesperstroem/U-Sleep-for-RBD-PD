@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
 import torch
+import os
 
 class Dataset_Split():
     dataset_filepath: str
@@ -31,13 +32,13 @@ class Split():
     def __init__(self):
         self.dataset_splits = []
 
-    def get_dict(self):
+    def get_dict(self) -> dict:
         dic = dict()
         
         for split in self.dataset_splits:
-            dic[split.dataset_filepath] = {"train": split.train,
-                                           "val": split.val,
-                                           "test": split.test}    
+            dic[os.path.basename(split.dataset_filepath)] = {"train": split.train,
+                                                             "val": split.val,
+                                                             "test": split.test}    
         return dic
 
 class ITag:

@@ -6,7 +6,7 @@ from csdp_pipeline.factories.pipeline_factory import (
     LSeqSleepNet_Pipeline_Factory,
 )
 from csdp_pipeline.pipeline_elements.pipe import IBatch, ISample, Pipeline, IPipe, PipelineConfiguration, ISampler, SamplerConfiguration
-from csdp_pipeline.pipeline_elements.sampler import Sampler
+from csdp_pipeline.pipeline_elements.sampler import Random_Sampler
 from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
 from csdp_training.utility import create_split_file
 from functools import partial
@@ -25,16 +25,6 @@ class IDataloader_Factory(ABC):
         pass
 
 class Dataloader_Wrapper(IDataloader_Factory):
-    # def preprocess(self, data: IBatch, stage: str):
-    #     preprocessing_pipes = self.pipe_configuration.get_pipe_by_stage(stage)
-    #     pipeline = Pipeline(preprocessing_pipes)
-    #     return pipeline.preprocess(data)
-
-    # def custom_collate_fn(self, data: [ISample], stage):
-    #     batch = IBatch(data)
-    #     batch = self.preprocess(batch, stage=stage)
-    
-    #     return batch
 
     def __init__(
         self,
@@ -136,7 +126,7 @@ class DefaultUSleepDataloader(IDataloader_Factory):
                 data_split_path: str,
                 sub_percentage = 1.0):
         
-        train_sampler = Sampler(
+        train_sampler = Random_Sampler(
                 hdf5_base_path,
                 trainsets,
                 split_type="train",

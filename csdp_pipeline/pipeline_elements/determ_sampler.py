@@ -41,19 +41,7 @@ class Determ_sampler(ISampler):
 
         for f in datasets:
             with h5py.File(f.dataset_filepath, "r") as hdf5:
-                
-                # if self.split_file != None:
-                #     with open(self.split_file, "r") as splitfile:
-                #         splitdata = json.load(splitfile)
 
-                #         try:
-                #             sets = splitdata[f]
-                #             subjects = sets[self.split_type]
-                #         except:
-                #             print(f"Could not find configured split for dataset {f} and splittype {self.split_type}. All subjects are sampled.")
-                #             subjects = list(hdf5.keys())
-                # else:
-                #     subjects = list(hdf5.keys())
                 subjects = f.get_subjects_from_string(self.split_type)
                 
                 num_subjects = len(subjects)
@@ -69,9 +57,6 @@ class Determ_sampler(ISampler):
 
                     for r in records:
                         list_of_records.append((f.dataset_filepath,s,r))
-
-        if len(list_of_records) == 0:
-            raise ValueError(f"No subjects in split type: {self.split_type}")
         
         return list_of_records
 

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod, abstractproperty
-from csdp_pipeline.pipeline_elements.sampler import Sampler
+from csdp_pipeline.pipeline_elements.sampler import Random_Sampler
 from csdp_pipeline.pipeline_elements.resampler import Resampler
 from csdp_pipeline.pipeline_elements.spectrogram import Spectrogram
 from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
@@ -57,7 +57,7 @@ class LSeqSleepNet_Pipeline_Factory(IPipeline_Factory):
 
     def create_training_pipeline(self):
         return [
-            Sampler(
+            Random_Sampler(
                 self.hdf5_base_path,
                 self.trainsets,
                 split_type="train",

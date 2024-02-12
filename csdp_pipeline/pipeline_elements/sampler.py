@@ -13,7 +13,7 @@ import math
 import json
 from csdp_pipeline.pipeline_elements.pipe import ISampler, ISample, ITag, Split, Dataset_Split
 
-class Sampler(ISampler):
+class Random_Sampler(ISampler):
     def __init__(self,
                  split_data: Split,
                  split_type: str, 
@@ -24,9 +24,14 @@ class Sampler(ISampler):
         self.split_data = split_data
         self.subject_percentage = subject_percentage
         self.subjects, self.num_records = self.__list_files()
+
         print(f"Number of {split_type} subjects: {len(self.subjects)} records: {self.num_records} - subject percentage: {subject_percentage}")
 
-        self.probs = self.calc_probs()
+        try:
+            self.probs = self.calc_probs()
+        except:
+            self.probs = []
+            
         self.epoch_length = num_epochs
         self.num_samples = num_iterations
         

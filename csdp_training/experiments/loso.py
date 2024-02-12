@@ -1,9 +1,10 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 import torch
+from neptune.utils import stringify_unsupported
 import h5py
 from sklearn.model_selection import train_test_split
-from csdp_pipeline.pipeline_elements.sampler import Sampler
+from csdp_pipeline.pipeline_elements.sampler import Random_Sampler
 from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
 from csdp_pipeline.pipeline_elements.pipe import PipelineConfiguration, SamplerConfiguration
 from csdp_pipeline.factories.dataloader_factory import Dataloader_Wrapper
@@ -28,7 +29,7 @@ def create_global_split(dataset_filepaths: list[str]):
     return split_data
 
 def create_loso_split(dataset_filepaths: list[str],
-                      num_validation_subjects = 1):
+                      num_validation_subjects = 1) -> [Split]:
     all_subs = []
     all_split_data: list[Split] = []
 
@@ -57,53 +58,9 @@ def create_loso_split(dataset_filepaths: list[str],
         
         all_split_data.append(split_data)
 
-    # isExist = os.path.exists("splits")
-
-    # if not isExist:
-    #     os.makedirs("splits")
-
-    # for i, split in enumerate(all_split_data):
-    #     with open(f"splits/split{i}.json", "w") as outfile: 
-    #         json.dump(split.get_dict(), outfile)
-
     return all_split_data
 
 class LOSO_Experiment:
-    def __create_wrapper(self,
-                         split: Split,
-                         batch_size):
-        # val_sampler = Full_Eval_Dataset_Sampler(split_data=split,
-        #                                         split_type="val")
-
-        # train_sampler = Full_Train_Dataset_Sampler(window_size=35,
-        #                                            splitdata=split)
-
-        # test_sampler = Full_Eval_Dataset_Sampler(split_data=split,
-        #                                          split_type="test")
-
-        train_sampler = Sampler(split,
-                                split_type="train",
-                                num_epochs=35,
-                                num_iterations=batch_size*1)
-        
-        val_sampler = Determ_sampler(split,
-                                     split_type="val")
-        
-        test_sampler = Determ_sampler(split,
-                                      split_type="test")
-
-        samplers = SamplerConfiguration(train_sampler,
-                                        val_sampler,
-                                        test_sampler)
-        
-        pipes = self.pipeline_configuration
-
-        wrapper = Dataloader_Wrapper(batch_size,
-                                     samplers,
-                                     pipes)
-        
-        return wrapper
-
     def __init__(self,
                  base_net: USleep_Lightning,
                  dataset_paths: list[str],
@@ -111,12 +68,14 @@ class LOSO_Experiment:
                  batch_size: int,
                  num_val_subjects: int = 1,
                  test_first: bool = False,
+                 sampler_configuration: SamplerConfiguration = None,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
                  neptune_run: neptune.Run | None = None,
                  pretrained_model: str = None):
         self.dataset_paths = dataset_paths
         self.pipeline_configuration = pipeline_configuration
+        self.sampler_configuration = sampler_configuration
         self.experiment_name = experiment_name
         self.training_epochs = training_epochs
         self.neptune_run = neptune_run
@@ -134,18 +93,21 @@ class LOSO_Experiment:
             wrapper = self.__create_wrapper(global_split, self.batch_size)
 
             trainer = self.__init_trainer(max_epochs=self.training_epochs,
+                                          split_data = global_split,
                                           split_name="Global Test")
             
             base_net = deepcopy(self.base_net)
             
-            self.__test(trainer, wrapper, base_net, split_name="Global Test")
+            self.__test(trainer, wrapper, base_net, split_name="Global Test", load_best_model=False)
 
         for split in self.split_data:
             f = list(filter(lambda x: len(x.test) > 0, split.dataset_splits))
             split_name = f[0].test[0]
 
             wrapper = self.__create_wrapper(split, self.batch_size)
+
             trainer = self.__init_trainer(max_epochs=self.training_epochs,
+                                          split_data=split,
                                           split_name=split_name)
 
             base_net = deepcopy(self.base_net)
@@ -176,28 +138,33 @@ class LOSO_Experiment:
                trainer: pl.Trainer,
                wrapper: Dataloader_Wrapper,
                net: USleep_Lightning,
-               split_name: str):        
+               split_name: str,
+               load_best_model = True):        
         loader = wrapper.testing_loader(num_workers=1)
 
         net.run_test(trainer, 
                      net, 
                      loader, 
-                     output_folder_prefix=f"{self.experiment_name}/split_{split_name}")
+                     output_folder_prefix=f"{self.experiment_name}/split_{split_name}",
+                     load_best_model=load_best_model)
 
     def __init_trainer(self,
-                       max_epochs,
-                       split_name) -> pl.Trainer:
+                       max_epochs: int,
+                       split_data: Split,
+                       split_name: str) -> pl.Trainer:
         
         checkpoint_callback = ModelCheckpoint(filename=f"best-{split_name}", monitor="valKap", mode="max")
        
         callbacks = [checkpoint_callback]
 
         if self.neptune_run != None:
+            self.neptune_run[f"{split_name}/split_data"] = stringify_unsupported(split_data.get_dict())
+
             logger = NeptuneLogger(run=self.neptune_run,
                                    prefix=split_name)
         else:
             logger = None
-
+        
         trainer = pl.Trainer(logger=logger,
                              max_epochs=max_epochs,
                              callbacks=callbacks,
@@ -206,3 +173,33 @@ class LOSO_Experiment:
                              num_nodes=1)
         
         return trainer
+    
+    def __create_wrapper(self,
+                         split: Split,
+                         batch_size):
+        
+        if self.sampler_configuration != None:
+            samplers = self.sampler_configuration
+        else:                
+            train_sampler = Random_Sampler(split,
+                                        split_type="train",
+                                        num_epochs=35,
+                                        num_iterations=batch_size*1)
+            
+            val_sampler = Determ_sampler(split,
+                                        split_type="val")
+            
+            test_sampler = Determ_sampler(split,
+                                        split_type="test")
+            
+            samplers = SamplerConfiguration(train_sampler,
+                                            val_sampler,
+                                            test_sampler)
+        
+        pipes = self.pipeline_configuration
+
+        wrapper = Dataloader_Wrapper(batch_size,
+                                     samplers,
+                                     pipes)
+    
+        return wrapper
