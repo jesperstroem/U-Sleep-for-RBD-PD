@@ -129,10 +129,10 @@ class USleep_Lightning(Base_Lightning):
 
         return xbatch
 
-    def training_step(self, batch: IBatch, _):
-        x_eeg = batch.eeg
-        x_eog = batch.eog
-        ybatch = batch.labels
+    def training_step(self, batch: dict, _):
+        x_eeg = batch["eeg"]
+        x_eog = batch["eog"]
+        ybatch = batch["labels"]
 
         xbatch = self.prep_batch(x_eeg, x_eog)
 
@@ -144,11 +144,11 @@ class USleep_Lightning(Base_Lightning):
 
         return step_loss
 
-    def validation_step(self, batch: IBatch, _):
+    def validation_step(self, batch: dict, _):
         # Step per record
-        x_eeg = batch.eeg
-        x_eog = batch.eog
-        ybatch = batch.labels
+        x_eeg = batch["eeg"]
+        x_eog = batch["eog"]
+        ybatch = batch["labels"]
 
         xbatch = self.prep_batch(x_eeg, x_eog)
         
@@ -185,13 +185,12 @@ class USleep_Lightning(Base_Lightning):
         else:
             _ = trainer.test(net, loader)
 
-    def test_step(self, batch: IBatch, _):
+    def test_step(self, batch: dict, _):
         # Step per record
-        x_eeg = batch.eeg
-        x_eog = batch.eog
-        ybatch = batch.labels
-
-        assert len(batch.tags) == 1
+        x_eeg: torch.Tensor = batch["eeg"]
+        x_eog: torch.Tensor = batch["eog"]
+        ybatch: torch.Tensor = batch["labels"]
+        tags: dict = batch["tag"]
 
         assert len(x_eeg.shape) == 3
         ybatch = torch.flatten(ybatch)
@@ -204,8 +203,8 @@ class USleep_Lightning(Base_Lightning):
 
         log_test_step("results",
                       self.output_folder_prefix, 
-                      dataset=batch.tags[0].dataset,
-                      subject=batch.tags[0].subject,
-                      record=batch.tags[0].record, 
+                      dataset=tags["dataset"],
+                      subject=tags["subject"],
+                      record=tags["record"], 
                       channel_pred=channels_pred.to("cpu"),
                       labels=ybatch.to("cpu"))

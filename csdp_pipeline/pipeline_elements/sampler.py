@@ -7,6 +7,7 @@ Created on Fri Feb 17 10:25:31 2023
 
 import torch
 import numpy as np
+import os
 import h5py
 import math
 import json
@@ -139,10 +140,10 @@ class Sampler(ISampler):
         sample.eeg = x_eeg
         sample.eog = x_eog
         sample.labels = y
-        sample.tag = ITag(r_dataset,
-                                  r_subject,
-                                  r_record,
-                                  eeg,
+        sample.tag = ITag(os.path.basename(r_dataset.dataset_filepath),
+                          r_subject,
+                            r_record,
+                              eeg,
                                   eog,
                                   x_start_index,
                                   x_start_index+(self.epoch_length*30*128))

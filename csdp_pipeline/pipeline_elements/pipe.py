@@ -102,6 +102,7 @@ class IBatch:
         self.labels = torch.stack(labels)
         self.tags = [sample.tag for sample in samples]
 
+
 class IPipe(ABC):
     @abstractmethod
     def process(x: IBatch) -> IBatch:

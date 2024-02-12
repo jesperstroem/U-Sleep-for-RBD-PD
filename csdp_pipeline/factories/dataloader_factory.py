@@ -25,15 +25,16 @@ class IDataloader_Factory(ABC):
         pass
 
 class Dataloader_Wrapper(IDataloader_Factory):
-    def preprocess(self, data: IBatch, stage: str):
-        preprocessing_pipes = self.pipe_configuration.get_pipe_by_stage(stage)
-        pipeline = Pipeline(preprocessing_pipes)
-        return pipeline.preprocess(data)
+    # def preprocess(self, data: IBatch, stage: str):
+    #     preprocessing_pipes = self.pipe_configuration.get_pipe_by_stage(stage)
+    #     pipeline = Pipeline(preprocessing_pipes)
+    #     return pipeline.preprocess(data)
 
-    def custom_collate_fn(self, data: [ISample], stage):
-        batch = IBatch(data)
-        batch = self.preprocess(batch, stage=stage)
-        return batch
+    # def custom_collate_fn(self, data: [ISample], stage):
+    #     batch = IBatch(data)
+    #     batch = self.preprocess(batch, stage=stage)
+    
+    #     return batch
 
     def __init__(
         self,
@@ -68,12 +69,12 @@ class Dataloader_Wrapper(IDataloader_Factory):
             DataLoader: The training dataloader. When drawing samples from this dataloader, the data will be served with 4 values - (eeg_data, eog_data, labels, tags).
         """
 
-        dataset = PipelineDataset(self.samplers.get_sampler_by_stage("train"))
+        dataset = PipelineDataset(self.samplers.get_sampler_by_stage("train"),
+                                  self.pipe_configuration.get_pipe_by_stage("train"))
 
         trainloader = DataLoader(
             dataset,
             batch_size=self.training_batch_size,
-            collate_fn=partial(self.custom_collate_fn, stage="train"),
             shuffle=False,
             num_workers=num_workers,
             pin_memory=True,
@@ -94,10 +95,11 @@ class Dataloader_Wrapper(IDataloader_Factory):
 
         sampler = self.samplers.get_sampler_by_stage("val")
 
-        dataset = PipelineDataset(sampler)
+        dataset = PipelineDataset(sampler,
+                                  self.pipe_configuration.get_pipe_by_stage("val"))
         
         valloader = DataLoader(
-            dataset, batch_size=1, shuffle=False, num_workers=num_workers, collate_fn=partial(self.custom_collate_fn, stage="val"),
+            dataset, batch_size=1, shuffle=False, num_workers=num_workers,
         )
         return valloader
 
@@ -114,10 +116,11 @@ class Dataloader_Wrapper(IDataloader_Factory):
 
         sampler = self.samplers.get_sampler_by_stage("test")
 
-        dataset = PipelineDataset(sampler)
+        dataset = PipelineDataset(sampler,
+                                  self.pipe_configuration.get_pipe_by_stage("test"))
 
         testloader = DataLoader(
-            dataset, batch_size=1, shuffle=False, num_workers=num_workers, collate_fn=partial(self.custom_collate_fn, stage="test"),
+            dataset, batch_size=1, shuffle=False, num_workers=num_workers,
         )
 
         return testloader
