@@ -67,12 +67,14 @@ class LOSO_Experiment:
                  training_epochs: int,
                  batch_size: int,
                  num_val_subjects: int = 1,
+                 num_random_batches: int = 100,
                  test_first: bool = False,
                  sampler_configuration: SamplerConfiguration = None,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
                  neptune_run: neptune.Run | None = None,
                  pretrained_model: str = None):
+        self.num_random_batches = num_random_batches
         self.dataset_paths = dataset_paths
         self.pipeline_configuration = pipeline_configuration
         self.sampler_configuration = sampler_configuration
@@ -184,7 +186,7 @@ class LOSO_Experiment:
             train_sampler = Random_Sampler(split,
                                         split_type="train",
                                         num_epochs=35,
-                                        num_iterations=batch_size*1)
+                                        num_iterations=batch_size*self.num_random_batches)
             
             val_sampler = Determ_sampler(split,
                                         split_type="val")
