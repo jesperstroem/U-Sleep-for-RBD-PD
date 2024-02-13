@@ -125,6 +125,14 @@ class PipelineConfiguration:
                  train: [IPipe] = [],
                  val: [IPipe] = [], 
                  test: [IPipe] = []):
+        """_summary_
+
+        Args:
+            train (IPipe], optional): A list of IPipe. Each pipe needs to implement the function "process", which transforms a single sample. Defaults to [] which means the sample is unchanged.
+            val (IPipe], optional): A list of IPipe. Each pipe needs to implement the function "process", which transforms a single sample. Defaults to [] which means the sample is unchanged.
+            test (IPipe], optional): A list of IPipe. Each pipe needs to implement the function "process", which transforms a single sample. Defaults to [] which means the sample is unchanged.
+        """
+
         self.train_pipes = train
         self.val_pipes = val
         self.test_pipes = test

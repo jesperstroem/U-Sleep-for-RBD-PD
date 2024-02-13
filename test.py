@@ -38,12 +38,14 @@ def main():
                                    mode="sync")
     
     # EAR EEG SETUP
-    #picker = EESM2_Channel_Combiner()
-    #checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/onechannel.ckpt"
+    picker = EESM2_Channel_Combiner()
+    checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/onechannel.ckpt"
+    datasets = ["C:/Users/au588953/Big_Sleep_Set/eesm2.hdf5"]
 
     # PSG SETUP
-    picker = First_Channel_Picker()
-    checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/twochannel.ckpt"
+    #picker = First_Channel_Picker()
+    #checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/twochannel.ckpt"
+    #datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
 
     pipeline_configuration = PipelineConfiguration(train=[picker], 
                                                    val=[picker], 
@@ -55,7 +57,7 @@ def main():
                                                 checkpoint_path=checkpoint_path)
 
     loso = LOSO_Experiment(base_net=net,
-                           dataset_paths=["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"],
+                           dataset_paths=datasets,
                            training_epochs=1,
                            batch_size=64,
                            batches_per_epoch=1,

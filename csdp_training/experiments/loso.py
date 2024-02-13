@@ -72,8 +72,23 @@ class LOSO_Experiment:
                  test_first: bool = False,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
-                 neptune_run: neptune.Run | None = None,
-                 pretrained_model: str = None):
+                 neptune_run: neptune.Run | None = None):
+        """_summary_
+
+        Args:
+            base_net (USleep_Lightning): A U-Sleep lightning model
+            dataset_paths (list[str]): A list of exact filepaths to the datasets used for the experiment
+            training_epochs (int): Number of training epochs per fold
+            batch_size (int): Batchsize during training
+            num_val_subjects (int, optional): The number of validation subjects per fold. Defaults to 1.
+            batches_per_epoch (int, optional): Number of mini-batches per epoch. Defaults to 100.
+            pick_all_channels (bool, optional): If True, the sampled data will contain all available channels. If False, one random EEG and EOG is picked. Defaults to False.
+            test_first (bool, optional): If True, the base model will be tested first on all records. Defaults to False.
+            pipeline_configuration (PipelineConfiguration, optional): A desired pipeline configuration. The default parameter has no pipes. Defaults to PipelineConfiguration().
+            experiment_name (str, optional): The name of the experiment and the name of the test output folder. Defaults to "LOSO".
+            neptune_run (neptune.Run | None, optional): An initialized neptune logging run. Defaults to None.
+        """
+
         self.batches_per_epoch = batches_per_epoch
         self.pick_all_channels = pick_all_channels
         self.dataset_paths = dataset_paths
@@ -81,7 +96,6 @@ class LOSO_Experiment:
         self.experiment_name = experiment_name
         self.training_epochs = training_epochs
         self.neptune_run = neptune_run
-        self.pretrained_model = pretrained_model
         self.base_net = base_net
         self.batch_size = batch_size
         self.split_data = create_loso_split(dataset_paths,
