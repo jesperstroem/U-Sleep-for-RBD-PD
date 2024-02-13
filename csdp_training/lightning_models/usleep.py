@@ -5,7 +5,6 @@ import torch
 from csdp_training.lightning_models.base import Base_Lightning
 from csdp_training.utility import log_test_step
 from ml_architectures.usleep.usleep import USleep
-from csdp_pipeline.pipeline_elements.pipe import IBatch
 import pytorch_lightning as pl
 
 class USleep_Lightning(Base_Lightning):

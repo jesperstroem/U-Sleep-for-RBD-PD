@@ -67,17 +67,17 @@ class LOSO_Experiment:
                  training_epochs: int,
                  batch_size: int,
                  num_val_subjects: int = 1,
-                 num_random_batches: int = 100,
+                 batches_per_epoch: int = 100,
+                 pick_all_channels = False,
                  test_first: bool = False,
-                 sampler_configuration: SamplerConfiguration = None,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
                  neptune_run: neptune.Run | None = None,
                  pretrained_model: str = None):
-        self.num_random_batches = num_random_batches
+        self.batches_per_epoch = batches_per_epoch
+        self.pick_all_channels = pick_all_channels
         self.dataset_paths = dataset_paths
         self.pipeline_configuration = pipeline_configuration
-        self.sampler_configuration = sampler_configuration
         self.experiment_name = experiment_name
         self.training_epochs = training_epochs
         self.neptune_run = neptune_run
@@ -180,23 +180,23 @@ class LOSO_Experiment:
                          split: Split,
                          batch_size):
         
-        if self.sampler_configuration != None:
-            samplers = self.sampler_configuration
-        else:                
-            train_sampler = Random_Sampler(split,
-                                        split_type="train",
-                                        num_epochs=35,
-                                        num_iterations=batch_size*self.num_random_batches)
-            
-            val_sampler = Determ_sampler(split,
-                                        split_type="val")
-            
-            test_sampler = Determ_sampler(split,
-                                        split_type="test")
-            
-            samplers = SamplerConfiguration(train_sampler,
-                                            val_sampler,
-                                            test_sampler)
+        train_sampler = Random_Sampler(split,
+                                    split_type="train",
+                                    num_epochs=35,
+                                    get_all_channels=self.pick_all_channels,
+                                    num_iterations=batch_size*self.batches_per_epoch)
+        
+        val_sampler = Determ_sampler(split,
+                                     get_all_channels=self.pick_all_channels,
+                                    split_type="val")
+        
+        test_sampler = Determ_sampler(split,
+                                      get_all_channels=self.pick_all_channels,
+                                      split_type="test")
+        
+        samplers = SamplerConfiguration(train_sampler,
+                                        val_sampler,
+                                        test_sampler)
         
         pipes = self.pipeline_configuration
 

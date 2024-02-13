@@ -83,30 +83,30 @@ class ISampler:
 
     num_samples: int
 
-class IBatch:
-    eeg: torch.Tensor
-    eog: torch.Tensor
-    labels: torch.Tensor
-    size: int
-    tags: list[ITag]
+# class IBatch:
+#     eeg: torch.Tensor
+#     eog: torch.Tensor
+#     labels: torch.Tensor
+#     size: int
+#     tags: list[ITag]
 
-    def __init__(self,
-                 samples: [ISample]):
-        eegs = [sample.eeg for sample in samples]
-        eogs = [sample.eog for sample in samples]
-        labels = [sample.labels for sample in samples]
+#     def __init__(self,
+#                  samples: [ISample]):
+#         eegs = [sample.eeg for sample in samples]
+#         eogs = [sample.eog for sample in samples]
+#         labels = [sample.labels for sample in samples]
 
-        self.eeg = torch.stack(eegs)
-        self.eog = torch.stack(eogs)
+#         self.eeg = torch.stack(eegs)
+#         self.eog = torch.stack(eogs)
 
-        self.size = len(samples)
-        self.labels = torch.stack(labels)
-        self.tags = [sample.tag for sample in samples]
+#         self.size = len(samples)
+#         self.labels = torch.stack(labels)
+#         self.tags = [sample.tag for sample in samples]
 
 
 class IPipe(ABC):
     @abstractmethod
-    def process(x: IBatch) -> IBatch:
+    def process(x: ISample) -> ISample:
         pass
 
 class Pipeline:

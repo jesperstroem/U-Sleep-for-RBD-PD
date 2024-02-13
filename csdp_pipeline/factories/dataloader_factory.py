@@ -5,7 +5,7 @@ from csdp_pipeline.factories.pipeline_factory import (
     USleep_Pipeline_Factory,
     LSeqSleepNet_Pipeline_Factory,
 )
-from csdp_pipeline.pipeline_elements.pipe import IBatch, ISample, Pipeline, IPipe, PipelineConfiguration, ISampler, SamplerConfiguration
+from csdp_pipeline.pipeline_elements.pipe import ISample, Pipeline, IPipe, PipelineConfiguration, ISampler, SamplerConfiguration
 from csdp_pipeline.pipeline_elements.sampler import Random_Sampler
 from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
 from csdp_training.utility import create_split_file

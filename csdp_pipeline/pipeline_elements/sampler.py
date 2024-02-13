@@ -19,9 +19,11 @@ class Random_Sampler(ISampler):
                  split_type: str, 
                  num_epochs: int, 
                  num_iterations: int,
+                 get_all_channels: bool = False,
                  subject_percentage = 1):
         self.split_type = split_type
         self.split_data = split_data
+        self.get_all_channels = get_all_channels
         self.subject_percentage = subject_percentage
         self.subjects, self.num_records = self.__list_files()
 
@@ -71,10 +73,6 @@ class Random_Sampler(ISampler):
          # Choose random dataset
         r_dataset: Dataset_Split = np.random.choice(possible_sets, 1, p=probs)[0]
 
-        # index = possible_sets.index(r_dataset)
-
-        # subjects = self.subjects[index]
-
         subjects = r_dataset.get_subjects_from_string(self.split_type)
 
         r_subject = np.random.choice(subjects, 1)[0]
@@ -93,11 +91,12 @@ class Random_Sampler(ISampler):
             hyp = hdf5[r_subject][r_record]["hypnogram"][()]
             psg = list(hdf5[r_subject][r_record]["psg"].keys())
 
-            try:
-                eeg = self.__pick_random_channel(psg, "EEG")
-                eog = self.__pick_random_channel(psg, "EOG")
-            except:
-                return None
+            if self.get_all_channels == True:
+                eegs = self.__pick_all(psg, "EEG")
+                eogs = self.__pick_all(psg, "EOG")
+            else:
+                eegs = self.__pick_random_channel(psg, "EEG")
+                eogs = self.__pick_random_channel(psg, "EOG")
 
             # Choose random index of a random label
             label_set = np.unique(hyp)
@@ -125,21 +124,29 @@ class Random_Sampler(ISampler):
             
             x_start_index = start_index*128*30
 
-            try:
-                eeg_segment = hdf5[r_subject][r_record]["psg"][eeg][x_start_index:x_start_index+(self.epoch_length*30*128)]
-            except:
-                eeg_segment = []
+            eeg_segments = []
+            eog_segments = []
 
-            try:
-                eog_segment = hdf5[r_subject][r_record]["psg"][eog][x_start_index:x_start_index+(self.epoch_length*30*128)]
-            except:
-                eog_segment = []
+            for eeg in eegs:
+                try:
+                    eeg_segment = hdf5[r_subject][r_record]["psg"][eeg][x_start_index:x_start_index+(self.epoch_length*30*128)]
+                except:
+                    eeg_segment = []
+                eeg_segments.append(eeg_segment)
 
-        x_eeg = torch.tensor(eeg_segment)
-        x_eog = torch.tensor(eog_segment)
-        
-        x_eeg = x_eeg.unsqueeze(0)
-        x_eog = x_eog.unsqueeze(0)
+            for eog in eogs:
+                try:
+                    eog_segment = hdf5[r_subject][r_record]["psg"][eog][x_start_index:x_start_index+(self.epoch_length*30*128)]
+                except:
+                    eog_segment = []
+
+                eog_segments.append(eog_segment)
+
+        eeg_segments = np.array(eeg_segments)
+        eog_segments = np.array(eog_segments)
+
+        x_eeg = torch.tensor(eeg_segments)
+        x_eog = torch.tensor(eog_segments)
 
         sample = ISample(-1)
         sample.eeg = x_eeg
@@ -147,11 +154,11 @@ class Random_Sampler(ISampler):
         sample.labels = y
         sample.tag = ITag(os.path.basename(r_dataset.dataset_filepath),
                           r_subject,
-                            r_record,
-                              eeg,
-                                  eog,
-                                  x_start_index,
-                                  x_start_index+(self.epoch_length*30*128))
+                          r_record,
+                          eegs,
+                          eogs,
+                          x_start_index,
+                          x_start_index+(self.epoch_length*30*128))
         
         return sample
 
@@ -159,9 +166,15 @@ class Random_Sampler(ISampler):
         #Choose random eeg and eog
         channels = [x for x in channel_list if x.startswith(type)]
 
-        r_channel = np.random.choice(channels, 1)[0]
+        r_channel = np.random.choice(channels, 1)
                 
         return r_channel
+    
+    def __pick_all(self, channel_list, type):
+        #Choose random eeg and eog
+        channels = [x for x in channel_list if x.startswith(type)]
+                
+        return channels
 
     def __list_files(self):
         subjects = []

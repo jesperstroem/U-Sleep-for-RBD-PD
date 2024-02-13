@@ -76,7 +76,7 @@ class Base_Lightning(pl.LightningModule):
         y_pred = torch.reshape(y_pred, (-1, 5))
         y_true = torch.flatten(y_true)
 
-        loss = self.loss(y_pred, y_true)
+        loss = self.loss(y_pred, y_true.long())
 
         y_pred = torch.argmax(y_pred, dim=1)
         
