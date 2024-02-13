@@ -115,16 +115,16 @@ class Base_Lightning(pl.LightningModule):
         all_acc = self.validation_step_acc
         all_kap = self.validation_step_kap    
         all_f1 = self.validation_step_f1
-        all_preds = self.validation_preds
-        all_labels = self.validation_labels
+        #all_preds = self.validation_preds
+        #all_labels = self.validation_labels
 
-        all_preds = torch.cat(all_preds)
-        all_labels = torch.cat(all_labels)
+        #all_preds = torch.cat(all_preds)
+        #all_labels = torch.cat(all_labels)
 
-        all_preds, all_labels = filter_unknowns(all_preds, all_labels)
+        #all_preds, all_labels = filter_unknowns(all_preds, all_labels)
 
-        all_preds = np.array(all_preds)
-        all_labels = np.array(all_labels)
+        #all_preds = np.array(all_preds)
+        #all_labels = np.array(all_labels)
 
         # cm = confusion_matrix(all_labels, all_preds)
 
