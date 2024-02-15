@@ -13,6 +13,7 @@ from copy import deepcopy
 from pytorch_lightning.loggers import NeptuneLogger
 import neptune
 from csdp_pipeline.pipeline_elements.pipe import Split, Dataset_Split
+from sklearn.model_selection import KFold
 
 def create_global_split(dataset_filepaths: list[str]):
     split_data = Split()
@@ -29,6 +30,7 @@ def create_global_split(dataset_filepaths: list[str]):
     return split_data
 
 def create_loso_split(dataset_filepaths: list[str],
+                      num_folds,
                       num_validation_subjects = 1) -> [Split]:
     all_subs = []
     all_split_data: list[Split] = []
@@ -40,19 +42,23 @@ def create_loso_split(dataset_filepaths: list[str],
             subs = [(file, sub) for sub in subs]
             all_subs.extend(subs)
     
-    for test_sub in all_subs:
-        rest_of_subs = list(filter(lambda x: x != test_sub, all_subs))
-        
-        train, val = train_test_split(rest_of_subs,
-                                      test_size=num_validation_subjects)
-        
-        split_data = Split()
+    kf = KFold(n_splits=folds)
 
+    for _, (train_index, test_index) in enumerate(kf.split(all_subs)):
+        split_data = Split()
+        
+        train_records = [all_subs[i] for i in train_index]
+
+        train_records, val_records = train_test_split(train_records,
+                                                      test_size=num_validation_subjects)
+
+        test_records = [all_subs[i] for i in test_index]
+        
         for file in dataset_filepaths:
             dataset_split = Dataset_Split(file)
-            dataset_split.train = [x[1] for x in list(filter(lambda x: file == x[0], train))]
-            dataset_split.val = [x[1] for x in list(filter(lambda x: file == x[0], val))]
-            dataset_split.test = [test_sub[1]] if test_sub[0] == file else []
+            dataset_split.train = [x[1] for x in list(filter(lambda x: file == x[0], train_records))]
+            dataset_split.val = [x[1] for x in list(filter(lambda x: file == x[0], val_records))]
+            dataset_split.test = [x[1] for x in list(filter(lambda x: file == x[0], test_records))]
 
             split_data.dataset_splits.append(dataset_split)
         
@@ -60,13 +66,13 @@ def create_loso_split(dataset_filepaths: list[str],
 
     return all_split_data
 
-class LOSO_Experiment:
+class CV_Experiment:
     def __init__(self,
                  base_net: USleep_Lightning,
                  dataset_paths: list[str],
                  training_epochs: int,
                  batch_size: int,
-                 num_val_subjects: int = 1,
+                 num_folds: int,
                  batches_per_epoch: int = 100,
                  pick_all_channels = False,
                  test_first: bool = False,
@@ -98,8 +104,9 @@ class LOSO_Experiment:
         self.neptune_run = neptune_run
         self.base_net = base_net
         self.batch_size = batch_size
+        self.num_folds = num_folds
         self.split_data = create_loso_split(dataset_paths,
-                                            num_validation_subjects=num_val_subjects)
+                                            num_folds=num_folds)
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -116,9 +123,10 @@ class LOSO_Experiment:
             
             self.__test(trainer, wrapper, base_net, split_name="Global Test", load_best_model=False)
 
-        for split in self.split_data:
-            f = list(filter(lambda x: len(x.test) > 0, split.dataset_splits))
-            split_name = f[0].test[0]
+        for i, split in enumerate(self.split_data):
+            # f = list(filter(lambda x: len(x.test) > 0, split.dataset_splits))
+            # split_name = f[0].test[0]
+            split_name = f"Split_{i}"
 
             wrapper = self.__create_wrapper(split, self.batch_size)
 

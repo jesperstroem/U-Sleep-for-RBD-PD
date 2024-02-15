@@ -1,4 +1,4 @@
-from csdp_training.experiments.loso import LOSO_Experiment, create_loso_split
+from csdp_training.experiments.loso import CV_Experiment, create_loso_split
 from csdp_training.lightning_models.usleep import USleep_Lightning
 from csdp_pipeline.pipeline_elements.pipe import ISample, IPipe, PipelineConfiguration
 import torch
@@ -32,15 +32,15 @@ class First_Channel_Picker(IPipe):
         return x 
 
 def main():
-    logging_run = neptune.init_run(project=project,
-                                   api_token=api_key,
-                                   name=name,
-                                   mode="sync")
+    # logging_run = neptune.init_run(project=project,
+    #                                api_token=api_key,
+    #                                name=name,
+    #                                mode="sync")
     
     # EAR EEG SETUP
     picker = EESM2_Channel_Combiner()
     checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/onechannel.ckpt"
-    datasets = ["C:/Users/au588953/Big_Sleep_Set/eesm2.hdf5"]
+    datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
 
     # PSG SETUP
     #picker = First_Channel_Picker()
@@ -56,14 +56,15 @@ def main():
                                                 batch_size=64,
                                                 checkpoint_path=checkpoint_path)
 
-    loso = LOSO_Experiment(base_net=net,
+    loso = CV_Experiment(base_net=net,
                            dataset_paths=datasets,
+                           folds=10,
                            training_epochs=1,
                            batch_size=64,
                            batches_per_epoch=1,
                            pick_all_channels = True,
                            pipeline_configuration=pipeline_configuration,
-                           neptune_run=logging_run,
+                           neptune_run=None,
                            test_first=False)
 
     loso.run_training()
