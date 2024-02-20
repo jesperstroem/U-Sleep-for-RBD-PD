@@ -27,10 +27,10 @@ class PipelineDataset(torch.utils.data.Dataset):
         d["labels"] = sample.labels
         d["tag"] = {"dataset": sample.tag.dataset,
                     "subject": sample.tag.subject,
-                    "record": sample.tag.record,
-                    "eeg": sample.tag.eeg,
-                    "eog": sample.tag.eog,
-                    "start_idx": sample.tag.start_idx,
-                    "end_idx": sample.tag.end_idx}
+                    "record": sample.tag.record}
+                    #"eeg": sample.tag.eeg,
+                    #"eog": sample.tag.eog,
+                    #"start_idx": sample.tag.start_idx,
+                    #"end_idx": sample.tag.end_idx}
 
         return d

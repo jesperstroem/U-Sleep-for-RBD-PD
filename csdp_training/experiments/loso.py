@@ -42,7 +42,8 @@ def create_loso_split(dataset_filepaths: list[str],
             subs = [(file, sub) for sub in subs]
             all_subs.extend(subs)
     
-    kf = KFold(n_splits=folds)
+    kf = KFold(n_splits=num_folds,
+               shuffle=True)
 
     for _, (train_index, test_index) in enumerate(kf.split(all_subs)):
         split_data = Split()
@@ -73,6 +74,7 @@ class CV_Experiment:
                  training_epochs: int,
                  batch_size: int,
                  num_folds: int,
+                 num_validation_subjects: int = 1,
                  batches_per_epoch: int = 100,
                  pick_all_channels = False,
                  test_first: bool = False,
@@ -105,8 +107,10 @@ class CV_Experiment:
         self.base_net = base_net
         self.batch_size = batch_size
         self.num_folds = num_folds
+        self.num_validation_subjects = num_validation_subjects
         self.split_data = create_loso_split(dataset_paths,
-                                            num_folds=num_folds)
+                                            num_folds=num_folds,
+                                            num_validation_subjects=num_validation_subjects)
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
 
