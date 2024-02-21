@@ -29,9 +29,9 @@ class Determ_sampler(ISampler):
     def get_sample(self, index: int):
         sample: ISample = self.__get_sample(index)
 
-        # if any(dim == 0 for dim in sample.eog.shape):
-        #     print("Found no EOG channel, duplicating EEG instead")
-        #     sample.eog = sample.eeg
+        if any(dim == 0 for dim in sample.eog.shape):
+            print("Found no EOG channel, duplicating EEG instead")
+            sample.eog = sample.eeg
 
         return sample
 
