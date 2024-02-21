@@ -2,8 +2,11 @@ from csdp_datastore.base import BaseDataset
 import os
 from mne.io import read_raw_eeglab
 import h5py
+import pandas
+import numpy as np
+import mat73
 
-class PDRBD_PB(BaseDataset):
+class PDRBD_PB_Base(BaseDataset):
     def label_mapping(self):
         return {
             1: self.Labels.Wake,
@@ -16,9 +19,6 @@ class PDRBD_PB(BaseDataset):
             8: self.Labels.UNKNOWN,
             9: self.Labels.UNKNOWN
         }
-    
-    def dataset_name(self):
-        return "PDRBD_PB"
     
     def list_records(self, basepath) -> dict[str, list[tuple]]:
         paths_dict = {}
@@ -40,60 +40,84 @@ class PDRBD_PB(BaseDataset):
         
         return paths_dict
     
+    def __front_align_data(self, signal, y, sr):
+        diff = len(signal)-(len(y)*sr*30)
+        signal_second_diff = diff/sr
+        
+        if signal_second_diff < 0:
+            num_epochs_to_keep = int(np.floor(len(signal)/sr/30))
+            data_to_keep = num_epochs_to_keep*sr*30
+        else:
+            num_epochs_to_keep = len(y)
+            data_to_keep = len(y)*sr*30
+
+        if signal_second_diff != 0:
+            self.log_warning(f"Signal had second diff {signal_second_diff}")
+        
+        return signal[:data_to_keep], y[:num_epochs_to_keep]
+
+
+    def __load_mat73file(self, psg_path, x, y):
+        data = mat73.loadmat(psg_path)
+        signals = data["data"][()]
+
+        channels = data["chanlocs"]["labels"]
+        channels = [ch[0] for ch in channels]
+        sr = int(data["srate"][()])
+
+        chans = [(i, chan) for i, chan in enumerate(channels) if chan in self.channel_mapping().keys()]
+ 
+        for chan in chans:
+            ch_idx = chan[0]
+            ch_name = chan[1]
+            signal = signals[ch_idx]
+            signal, y = self.__front_align_data(signal, y, sr)
+
+            x[ch_name] = (signal, sr)
+
+        return x,y
+
+    def __load_regular_eeglab(self, psg_path, x, y):
+        data = read_raw_eeglab(psg_path)
+        channels = data.ch_names
+        channels = [chan for chan in channels if chan in self.channel_mapping().keys()]
+        info = data.info
+        sr = int(info["sfreq"])
+
+        for chan in channels:
+            signal = data.get_data(chan)[0]
+
+            signal, y = self.__front_align_data(signal, y, sr)
+                
+            x[chan] = (signal, sr)
+
+        return x,y
+
     def read_psg(self, record):
         psg_path, hyp_path = record
         
         x = dict()
-        y = []
+        
+        hyp_data = pandas.read_csv(hyp_path,sep='\t')
+        y = hyp_data["staging"].tolist()
 
         try:
-            data = read_raw_eeglab(psg_path)
+            x, y = self.__load_regular_eeglab(psg_path, x, y)
         except Exception as error:
             try:
-                with h5py.File(psg_path, 'r') as f:
-                    data = f
+                print(f"Could not read with MNE due to error: {error}")
+                x, y = self.__load_mat73file(psg_path, x, y)
             except:
                 print(f"ERROR READING DATA FOR PATH: {psg_path}")
                 return None
 
-        channels = data.ch_names
-        info = data.info
-        sr = int(info["sfreq"])
-        channels = [chan for chan in channels if chan in self.channel_mapping().keys()]
-        #print(channels)
-
-        for chan in channels:
-            pass
-
-
-        exit()
-        
-        # with File(psg_path, "r") as h5:
-        #     h5channels = h5.get("channels")
-            
-        #     for channel in self.channel_mapping().keys():
-        #         channel_data = h5channels[channel][:]
-                
-        #         x[channel] = (channel_data, self.sample_rate()) # We are assuming sample rate is same across channels
-        
-        # with open(hyp_path) as f:
-        #     hypnogram = f.readlines()
-
-        #     for element in hypnogram:
-        #         prev_stages_time, stage_time, label = element.rstrip().split(",")
-        #         stage_time = int(stage_time)
-
-        #         n_epochs_in_stage = int(stage_time/30)
-
-        #         for label_entry in range(n_epochs_in_stage):
-        #             stg = label
-        #             assert stg != None
-                    
-        #             y.append(stg)
-                    
         return x, y
 
-class AUH(PDRBD_PB):
+class AUH(PDRBD_PB_Base):
+    
+    def dataset_name(self):
+        return "PB_AUH"
+
     def channel_mapping(self):
         return {'EOG2:M2': self.Mapping(self.TTRef.ER, self.TTRef.RPA), 
          'M2': self.Mapping(self.TTRef.RPA, self.TTRef.Cz), 
@@ -116,12 +140,79 @@ class AUH(PDRBD_PB):
          'O1': self.Mapping(self.TTRef.O1, self.TTRef.Cz), 
          'EOG2:M1': self.Mapping(self.TTRef.ER, self.TTRef.LPA), 
     }
-    
-def main():
-    datapath = "O:/Tech_Neuro247/BIDS/AUH"
 
-    d = AUH(datapath,
-            "")
+class COLOGNE(PDRBD_PB_Base):
+    
+    def dataset_name(self):
+        return "PB_COLOGNE"
+
+    def channel_mapping(self):
+        return  {'C3:M2': self.Mapping(self.TTRef.C3, self.TTRef.RPA), 
+                'O2:A1': self.Mapping(self.TTRef.O2, self.TTRef.LPA), 
+                'E2': self.Mapping(self.TTRef.ER, self.TTRef.Cz), 
+                'M2': self.Mapping(self.TTRef.RPA, self.TTRef.Cz), 
+                'E1': self.Mapping(self.TTRef.EL, self.TTRef.Cz), 
+                'E2:M1': self.Mapping(self.TTRef.ER, self.TTRef.LPA), 
+                'EOG1:A2': self.Mapping(self.TTRef.EL, self.TTRef.RPA), 
+                'O1:M2': self.Mapping(self.TTRef.O1, self.TTRef.RPA), 
+                'O1': self.Mapping(self.TTRef.O1, self.TTRef.Cz), 
+                'C4:A1': self.Mapping(self.TTRef.C4, self.TTRef.LPA), 
+                'O1:A2': self.Mapping(self.TTRef.O1, self.TTRef.RPA), 
+                'EOG1': self.Mapping(self.TTRef.EL, self.TTRef.Cz), 
+                'C3': self.Mapping(self.TTRef.C3, self.TTRef.Cz), 
+                'C4': self.Mapping(self.TTRef.C4, self.TTRef.Cz), 
+                'F4': self.Mapping(self.TTRef.F4, self.TTRef.Cz), 
+                'F4:M1': self.Mapping(self.TTRef.F4, self.TTRef.LPA), 
+                'EOG1:A1': self.Mapping(self.TTRef.EL, self.TTRef.LPA), 
+                'EOG2:A1': self.Mapping(self.TTRef.ER, self.TTRef.LPA), 
+                'M1': self.Mapping(self.TTRef.LPA, self.TTRef.Cz), 
+                'EOG2:A2': self.Mapping(self.TTRef.ER, self.TTRef.RPA), 
+                'F3:M2': self.Mapping(self.TTRef.F3, self.TTRef.RPA), 
+                'F3:A2': self.Mapping(self.TTRef.F3, self.TTRef.RPA), 
+                'O2': self.Mapping(self.TTRef.O2, self.TTRef.Cz), 
+                'E1:M2': self.Mapping(self.TTRef.EL, self.TTRef.RPA), 
+                'E1:M1': self.Mapping(self.TTRef.EL, self.TTRef.LPA), 
+                'A2': self.Mapping(self.TTRef.RPA, self.TTRef.Cz), 
+                'C3:A2': self.Mapping(self.TTRef.C3, self.TTRef.RPA), 
+                'C4:M1': self.Mapping(self.TTRef.C4, self.TTRef.LPA), 
+                'EOG2': self.Mapping(self.TTRef.ER, self.TTRef.Cz), 
+                'O2:M1': self.Mapping(self.TTRef.O2, self.TTRef.LPA), 
+                'E2:M2': self.Mapping(self.TTRef.ER, self.TTRef.RPA), 
+                'A1': self.Mapping(self.TTRef.LPA, self.TTRef.Cz), 
+                'F3': self.Mapping(self.TTRef.F3, self.TTRef.Cz), 
+                'F4:A1': self.Mapping(self.TTRef.F4, self.TTRef.LPA)
+                }
+
+class KIEL(PDRBD_PB_Base):
+    
+    def dataset_name(self):
+        return "PB_KIEL"
+
+    def channel_mapping(self):
+        return {'F4:A1': self.Mapping(self.TTRef.F4, self.TTRef.LPA), 
+                'EOG2:A1': self.Mapping(self.TTRef.ER, self.TTRef.LPA), 
+                'C3': self.Mapping(self.TTRef.C3, self.TTRef.Cz), 
+                'A1': self.Mapping(self.TTRef.LPA, self.TTRef.Cz), 
+                'O2:A1': self.Mapping(self.TTRef.O2, self.TTRef.LPA), 
+                'F4': self.Mapping(self.TTRef.F4, self.TTRef.Cz), 
+                'EOG2': self.Mapping(self.TTRef.ER, self.TTRef.Cz), 
+                'C4': self.Mapping(self.TTRef.C4, self.TTRef.Cz), 
+                'EOG2:A2': self.Mapping(self.TTRef.ER, self.TTRef.RPA), 
+                'C4:A1': self.Mapping(self.TTRef.C4, self.TTRef.LPA), 
+                'C3:A2': self.Mapping(self.TTRef.C3, self.TTRef.RPA), 
+                'O2': self.Mapping(self.TTRef.O2, self.TTRef.Cz), 
+                'A2': self.Mapping(self.TTRef.RPA, self.TTRef.Cz), 
+                'EOG1:A1': self.Mapping(self.TTRef.EL, self.TTRef.LPA), 
+                'EOG1:A2': self.Mapping(self.TTRef.EL, self.TTRef.RPA), 
+                'EOG1': self.Mapping(self.TTRef.EL, self.TTRef.Cz)}
+
+def main():
+    datapath = "O:/Tech_Neuro247/BIDS/COLOGNE"
+    out = "C:/Users/au588953"
+
+    d = COLOGNE(datapath,
+                out,
+                overwrite_existing=False)
     
     d.port_data()
 

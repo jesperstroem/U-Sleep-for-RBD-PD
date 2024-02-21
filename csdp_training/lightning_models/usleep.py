@@ -109,7 +109,6 @@ class USleep_Lightning(Base_Lightning):
         votes = torch.argmax(votes, axis=1)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
         votes = votes.to(device)
         
         return votes
@@ -190,6 +189,9 @@ class USleep_Lightning(Base_Lightning):
         x_eog: torch.Tensor = batch["eog"]
         ybatch: torch.Tensor = batch["labels"]
         tags: dict = batch["tag"]
+
+        print(x_eeg.shape)
+        print(x_eog.shape)
 
         assert len(x_eeg.shape) == 3
         ybatch = torch.flatten(ybatch)

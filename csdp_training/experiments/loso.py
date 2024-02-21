@@ -76,7 +76,7 @@ class CV_Experiment:
                  num_folds: int,
                  num_validation_subjects: int = 1,
                  batches_per_epoch: int = 100,
-                 pick_all_channels = False,
+                 pick_all_channels: [bool] = [False, False, False],
                  test_first: bool = False,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
@@ -209,15 +209,15 @@ class CV_Experiment:
         train_sampler = Random_Sampler(split,
                                     split_type="train",
                                     num_epochs=35,
-                                    get_all_channels=self.pick_all_channels,
+                                    get_all_channels=self.pick_all_channels[0],
                                     num_iterations=batch_size*self.batches_per_epoch)
         
         val_sampler = Determ_sampler(split,
-                                     get_all_channels=self.pick_all_channels,
+                                     get_all_channels=self.pick_all_channels[1],
                                     split_type="val")
         
         test_sampler = Determ_sampler(split,
-                                      get_all_channels=self.pick_all_channels,
+                                      get_all_channels=self.pick_all_channels[2],
                                       split_type="test")
         
         samplers = SamplerConfiguration(train_sampler,

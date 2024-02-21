@@ -16,6 +16,7 @@ class BaseDataset(ABC):
         self, 
         dataset_path: str, 
         output_path: str,
+        overwrite_existing: bool = True,
         max_num_subjects: int = None, 
         scale_and_clip: bool = True,
         output_sample_rate: int = 128,
@@ -40,6 +41,7 @@ class BaseDataset(ABC):
         self.logger = LoggingModule(logging_path)
         self.scale_and_clip = scale_and_clip
         self.output_sample_rate = output_sample_rate
+        self.overwrite_existing = overwrite_existing
         
         if data_format == "hdf5":
             self.write_function = self.write_record_to_database_hdf5
@@ -369,7 +371,7 @@ class BaseDataset(ABC):
         with File(file_path, "a") as f:
             # Require subject group, since we want to use the existing one, if subject has more records
             grp_subject = f.require_group(f"{subject_number}")
-            subgrp_record = grp_subject.create_group(f"{record_number}")
+            subgrp_record = grp_subject.require_group(f"{record_number}")
             
             subsubgrp_psg = subgrp_record.create_group("psg")
             
@@ -383,6 +385,26 @@ class BaseDataset(ABC):
         self.log_warning('Download function was called, but no download functionality has been implemented')
         pass
 
+    def does_exist(self, file_path, subject_number, record_number) -> bool:
+        file_exists = os.path.exists(file_path)
+
+        if file_exists == True:
+            with File(file_path, "r") as f:
+                if subject_number not in f.keys():
+                    return False
+                
+                subject_group = f[subject_number]
+                # print(subject_group.keys())
+                # print(subject_number)
+                # print(record_number)
+                # exit()
+                if str(record_number) not in subject_group.keys():
+                    return False
+
+                return True
+        else:
+            return False
+
     def port_data(self):
         paths_dict = self.list_records(basepath=self.dataset_path)
 
@@ -391,14 +413,25 @@ class BaseDataset(ABC):
         file_path = f"{self.output_path}/{self.dataset_name()}.hdf5"
         exists = os.path.exists(file_path)
         
-        if exists:
+        if exists and self.overwrite_existing == True:
             self.log_warning("HDF5 file already exists. Removing it")
             os.remove(file_path)
+
+        subject_list = list(paths_dict.keys())[:self.max_num_subjects]
         
-        for subject_number in list(paths_dict.keys())[:self.max_num_subjects]:
+        if len(subject_list) == 0:
+            self.log_error("No records found in the record list. No dataset created")
+            return
+
+        for subject_number in subject_list:
             record_number = 0
-            
+
             for record in paths_dict[subject_number]:
+                if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_number) == True):
+                    self.log_info(f"Skipping record, since it already exists", subject=subject_number, record=record)
+                    record_number = record_number + 1
+                    continue
+
                 psg = self.read_psg(record)
                 
                 if psg == None:

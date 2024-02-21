@@ -38,18 +38,18 @@ def main():
     #                                mode="sync")
     
     # EAR EEG SETUP
-    picker = EESM2_Channel_Combiner()
-    checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/onechannel.ckpt"
-    datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
+    #picker = EESM2_Channel_Combiner()
+    #checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/onechannel.ckpt"
+    #datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
 
     # PSG SETUP
     #picker = First_Channel_Picker()
-    #checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/twochannel.ckpt"
-    #datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
+    checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/twochannel.ckpt"
+    datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
 
-    pipeline_configuration = PipelineConfiguration(train=[picker], 
-                                                   val=[picker], 
-                                                   test=[picker])
+    pipeline_configuration = PipelineConfiguration(train=[], 
+                                                   val=[], 
+                                                   test=[])
 
 
     net = USleep_Lightning.load_from_checkpoint(lr=0.0001,
@@ -58,14 +58,14 @@ def main():
 
     loso = CV_Experiment(base_net=net,
                            dataset_paths=datasets,
-                           folds=10,
+                           num_folds=10,
                            training_epochs=1,
                            batch_size=64,
                            batches_per_epoch=1,
-                           pick_all_channels = True,
+                           pick_all_channels=[False, False, True],
                            pipeline_configuration=pipeline_configuration,
                            neptune_run=None,
-                           test_first=False)
+                           test_first=True)
 
     loso.run_training()
 
