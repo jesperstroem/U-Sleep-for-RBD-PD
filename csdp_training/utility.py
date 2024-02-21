@@ -13,21 +13,23 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 import numpy as np
 
-def log_test_step(base, run_id, dataset, subject, record, eeg_tag = None, eog_tag = None, **kwargs):
+def log_test_step(base, run_id, dataset, subject, record, **kwargs):
         """
         Used for logging raw predictions and true labels for a single step. Extra logging to Neptune happens through kwargs.
         Logging to file at location: ???
         Naming convention of file: {model_name}_{run_id} ???
         """
 
-        if eeg_tag != None and eog_tag != None:
-            identifier = f"pred_{eeg_tag}.{eog_tag}"
-        else:
-            identifier = f"pred"
+        #if eeg_tag != None and eog_tag != None:
+        #    identifier = f"pred_{eeg_tag}.{eog_tag}"
+        #else:
+        #    identifier = f"pred"
 
-        print(f"logging for: {dataset}/{identifier}")
+        #print(f"logging for: {dataset}/{identifier}")
         
-        print(f"kwargs: {kwargs}")
+        #print(f"kwargs: {kwargs}")
+
+        identifier = "preds"
 
         path = f"{base}/{run_id}/{dataset}/{subject}/{record}"
 

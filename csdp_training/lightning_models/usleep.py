@@ -81,19 +81,9 @@ class USleep_Lightning(Base_Lightning):
         num_eogs = eogshape[1]
         
         assert eegshape[2] == eogshape[2]
-        
-        #signal_len = eegshape[2]
-        #num_epochs = int(signal_len / 128 / 30)
-        
-        #votes = torch.zeros(num_epochs, 5) # fordi vi summerer løbende
-        
-        log_test_step("results",
-                       f"{self.output_folder_prefix}/labels", 
-                       dataset=tags["dataset"],
-                       subject=tags["subject"],
-                       record=tags["record"],
-                       labels=ybatch.to("cpu"))
-        
+
+        all_preds = {}
+
         for i in range(num_eegs):
             for p in range(num_eogs):
  
@@ -109,28 +99,20 @@ class USleep_Lightning(Base_Lightning):
                 pred = torch.nn.functional.softmax(pred, dim=1)
                 pred = torch.squeeze(pred)
                 pred = pred.swapaxes(0,1)
-                #pred = pred.cpu()
+                pred = pred.to("cpu")
 
                 eeg_tag = tags["eeg"][i]
                 eog_tag = tags["eog"][p]
 
-                log_test_step("results",
-                              f"{self.output_folder_prefix}/preds", 
-                              dataset=tags["dataset"],
-                              subject=tags["subject"],
-                              record=tags["record"],
-                              eeg_tag=eeg_tag,
-                              eog_tag=eog_tag,
-                              pred=pred.to("cpu"))
-
-                #votes = torch.add(votes, pred)
-
-        #votes = torch.argmax(votes, axis=1)
-
-        #device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        #votes = votes.to(device)
-        
-        #return votes
+                all_preds[f"{eeg_tag}/{eog_tag}"] = pred
+                
+        log_test_step("results",
+                      f"{self.output_folder_prefix}", 
+                      dataset=tags["dataset"],
+                      subject=tags["subject"],
+                      record=tags["record"],
+                      preds=all_preds,
+                      labels=ybatch.to("cpu"))
     
     def prep_batch(self, x_eeg, x_eog):
 
