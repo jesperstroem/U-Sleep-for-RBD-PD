@@ -45,8 +45,8 @@ class ITag:
     dataset: str
     subject: str
     record: str
-    eeg: str
-    eog: str
+    eeg: [str]
+    eog: [str]
     start_idx: str
     end_idx: str
 
@@ -54,8 +54,8 @@ class ITag:
                  dataset: str = "",
                  subject: str = "",
                  record : str = "",
-                 eeg = "",
-                 eog = "",
+                 eeg = [],
+                 eog = [],
                  start_idx = -1,
                  end_idx = -1):
         self.dataset = dataset

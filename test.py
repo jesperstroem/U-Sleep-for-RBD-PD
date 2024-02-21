@@ -65,7 +65,7 @@ def main():
                            pick_all_channels=[False, False, True],
                            pipeline_configuration=pipeline_configuration,
                            neptune_run=None,
-                           test_first=True)
+                           test_first=False)
 
     loso.run_training()
 

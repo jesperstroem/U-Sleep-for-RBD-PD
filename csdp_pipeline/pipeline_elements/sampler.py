@@ -155,8 +155,8 @@ class Random_Sampler(ISampler):
         sample.tag = ITag(os.path.basename(r_dataset.dataset_filepath),
                           r_subject,
                           r_record,
-                          eegs,
-                          eogs,
+                          [],
+                          [],
                           x_start_index,
                           x_start_index+(self.epoch_length*30*128))
         

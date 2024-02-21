@@ -73,7 +73,7 @@ class USleep_Lightning(Base_Lightning):
         
         return votes
     
-    def channels_prediction(self, x_eegs, x_eogs):
+    def channels_prediction(self, x_eegs, x_eogs, ybatch, tags):
         eegshape = x_eegs.shape
         eogshape = x_eogs.shape
         
@@ -82,10 +82,17 @@ class USleep_Lightning(Base_Lightning):
         
         assert eegshape[2] == eogshape[2]
         
-        signal_len = eegshape[2]
-        num_epochs = int(signal_len / 128 / 30)
+        #signal_len = eegshape[2]
+        #num_epochs = int(signal_len / 128 / 30)
         
-        votes = torch.zeros(num_epochs, 5) # fordi vi summerer løbende
+        #votes = torch.zeros(num_epochs, 5) # fordi vi summerer løbende
+        
+        log_test_step("results",
+                       f"{self.output_folder_prefix}/labels", 
+                       dataset=tags["dataset"],
+                       subject=tags["subject"],
+                       record=tags["record"],
+                       labels=ybatch.to("cpu"))
         
         for i in range(num_eegs):
             for p in range(num_eogs):
@@ -103,15 +110,27 @@ class USleep_Lightning(Base_Lightning):
                 pred = torch.squeeze(pred)
                 pred = pred.swapaxes(0,1)
                 pred = pred.cpu()
-                
-                votes = torch.add(votes, pred)
 
-        votes = torch.argmax(votes, axis=1)
+                eeg_tag = tags["eeg"][i]
+                eog_tag = tags["eog"][p]
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        votes = votes.to(device)
+                log_test_step("results",
+                              f"{self.output_folder_prefix}/preds", 
+                              dataset=tags["dataset"],
+                              subject=tags["subject"],
+                              record=tags["record"],
+                              eeg_tag=eeg_tag,
+                              eog_tag=eog_tag,
+                              labels=ybatch.to("cpu"))
+
+                #votes = torch.add(votes, pred)
+
+        #votes = torch.argmax(votes, axis=1)
+
+        #device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        #votes = votes.to(device)
         
-        return votes
+        #return votes
     
     def prep_batch(self, x_eeg, x_eog):
 
@@ -190,22 +209,11 @@ class USleep_Lightning(Base_Lightning):
         ybatch: torch.Tensor = batch["labels"]
         tags: dict = batch["tag"]
 
-        print(x_eeg.shape)
-        print(x_eog.shape)
-
         assert len(x_eeg.shape) == 3
         ybatch = torch.flatten(ybatch)
         
         if self.include_eog == True:
             assert len(x_eog.shape) == 3
-            channels_pred: torch.Tensor = self.channels_prediction(x_eeg, x_eog)
+            self.channels_prediction(x_eeg, x_eog, ybatch, tags)
         else:
             channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg)
-
-        log_test_step("results",
-                      self.output_folder_prefix, 
-                      dataset=tags["dataset"],
-                      subject=tags["subject"],
-                      record=tags["record"], 
-                      channel_pred=channels_pred.to("cpu"),
-                      labels=ybatch.to("cpu"))

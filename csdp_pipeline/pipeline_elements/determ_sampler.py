@@ -109,8 +109,8 @@ class Determ_sampler(ISampler):
         else:
             eeg_keys = available_eeg_keys
             eog_keys = available_eog_keys
-            eeg_tag = "all"
-            eog_tag = "all"
+            eeg_tag = available_eeg_keys
+            eog_tag = available_eog_keys
 
         for ch in eeg_keys:
             data = hdf5[subject][rec]["psg"][ch][:]
