@@ -14,6 +14,18 @@ from pytorch_lightning.loggers import NeptuneLogger
 import neptune
 from csdp_pipeline.pipeline_elements.pipe import Split, Dataset_Split
 from sklearn.model_selection import KFold
+import os
+import json
+
+def save_split_data(split_data: list[Split]):
+    cwd = os.getcwd()
+    os.mkdir(f"{cwd}/splits")
+
+    for i, split in enumerate(split_data):
+        dic = split.get_dict()
+        
+        with open(f"{cwd}/splits/{i}.json", 'w') as fp:
+            json.dump(dic, fp)
 
 def create_global_split(dataset_filepaths: list[str]):
     split_data = Split()
@@ -111,6 +123,9 @@ class CV_Experiment:
         self.split_data = create_loso_split(dataset_paths,
                                             num_folds=num_folds,
                                             num_validation_subjects=num_validation_subjects)
+        
+        save_split_data(self.split_data)
+
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
 
