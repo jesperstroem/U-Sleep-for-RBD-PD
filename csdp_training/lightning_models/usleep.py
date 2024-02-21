@@ -109,7 +109,7 @@ class USleep_Lightning(Base_Lightning):
                 pred = torch.nn.functional.softmax(pred, dim=1)
                 pred = torch.squeeze(pred)
                 pred = pred.swapaxes(0,1)
-                pred = pred.cpu()
+                #pred = pred.cpu()
 
                 eeg_tag = tags["eeg"][i]
                 eog_tag = tags["eog"][p]
@@ -121,7 +121,7 @@ class USleep_Lightning(Base_Lightning):
                               record=tags["record"],
                               eeg_tag=eeg_tag,
                               eog_tag=eog_tag,
-                              labels=ybatch.to("cpu"))
+                              pred=pred.to("cpu"))
 
                 #votes = torch.add(votes, pred)
 
