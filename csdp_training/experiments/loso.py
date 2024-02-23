@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 import torch
 from neptune.utils import stringify_unsupported
 import h5py
@@ -19,7 +19,8 @@ import json
 
 def save_split_data(split_data: list[Split], exp_name):
     cwd = os.getcwd()
-    os.mkdir(f"{cwd}/splits/{exp_name}")
+
+    os.makedirs(f"{cwd}/splits/{exp_name}")
 
     for i, split in enumerate(split_data):
         dic = split.get_dict()
@@ -86,6 +87,7 @@ class CV_Experiment:
                  training_epochs: int,
                  batch_size: int,
                  num_folds: int,
+                 earlystopping_patience: int,
                  num_validation_subjects: int = 1,
                  batches_per_epoch: int = 100,
                  pick_all_channels: [bool] = [False, False, False],
@@ -118,6 +120,7 @@ class CV_Experiment:
         self.neptune_run = neptune_run
         self.base_net = base_net
         self.batch_size = batch_size
+        self.earlystopping_patience = earlystopping_patience
         self.num_folds = num_folds
         self.num_validation_subjects = num_validation_subjects
         self.split_data = create_loso_split(dataset_paths,
@@ -197,8 +200,16 @@ class CV_Experiment:
                        split_name: str) -> pl.Trainer:
         
         checkpoint_callback = ModelCheckpoint(filename=f"best-{split_name}", monitor="valKap", mode="max")
-       
-        callbacks = [checkpoint_callback]
+        
+        early_stopping = EarlyStopping(
+            monitor="valKap",
+            min_delta=0.00,
+            patience=self.earlystopping_patience,
+            verbose=True,
+            mode="max"
+        )
+
+        callbacks = [checkpoint_callback, early_stopping]
 
         if self.neptune_run != None:
             self.neptune_run[f"{split_name}/split_data"] = stringify_unsupported(split_data.get_dict())

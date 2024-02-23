@@ -58,10 +58,11 @@ def main():
 
     loso = CV_Experiment(base_net=net,
                            dataset_paths=datasets,
-                           num_folds=10,
-                           training_epochs=1,
+                           num_folds=2,
+                           training_epochs=5,
                            batch_size=64,
                            batches_per_epoch=1,
+                           earlystopping_patience=2,
                            pick_all_channels=[False, False, True],
                            pipeline_configuration=pipeline_configuration,
                            neptune_run=None,
