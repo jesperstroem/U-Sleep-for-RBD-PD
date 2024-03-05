@@ -1,4 +1,4 @@
-from csdp_training.experiments.loso import CV_Experiment, create_loso_split
+from csdp_training.experiments.loso import CV_Experiment, create_split
 from csdp_training.lightning_models.usleep import USleep_Lightning
 from csdp_pipeline.pipeline_elements.pipe import ISample, IPipe, PipelineConfiguration
 import torch
@@ -45,7 +45,8 @@ def main():
     # PSG SETUP
     #picker = First_Channel_Picker()
     checkpoint_path = "C:/Users/au588953/Git Repos/USleep Pipeline/weights/twochannel.ckpt"
-    datasets = ["C:/Users/au588953/Big_Sleep_Set/sedf_st.hdf5"]
+    basepath = "C:/Users/au588953/Big_Sleep_Set"
+    datasets = ["sedf_st.hdf5"]
 
     pipeline_configuration = PipelineConfiguration(train=[], 
                                                    val=[], 
@@ -57,16 +58,18 @@ def main():
                                                 checkpoint_path=checkpoint_path)
 
     loso = CV_Experiment(base_net=net,
-                           dataset_paths=datasets,
-                           num_folds=2,
-                           training_epochs=5,
-                           batch_size=64,
-                           batches_per_epoch=1,
-                           earlystopping_patience=2,
-                           pick_all_channels=[False, False, True],
-                           pipeline_configuration=pipeline_configuration,
-                           neptune_run=None,
-                           test_first=False)
+                         base_data_path=basepath,
+                         datasets=datasets,
+                         training_epochs=1,
+                         batch_size=64,
+                         num_folds=3,
+                         earlystopping_patience=10,
+                         batches_per_epoch=1,
+                         pick_all_channels=[False, False, True],
+                         pipeline_configuration=pipeline_configuration,
+                         continue_existing=True,
+                         neptune_run=None,
+                         test_first=False)
 
     loso.run_training()
 

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 import torch
 import os
+import json
 
 class Dataset_Split():
     dataset_filepath: str
@@ -29,8 +30,24 @@ class Dataset_Split():
 class Split():
     dataset_splits: list[Dataset_Split]
 
-    def __init__(self):
+    def __init__(self, split_path = None, base_data_path = None):
         self.dataset_splits = []
+
+        if split_path == None or base_data_path == None:
+            return
+
+        with open(split_path) as f:
+            data = json.load(f)
+        
+        datasets = list(map(lambda x: x[0], data.items()))
+
+        for dset in datasets:
+            s = Dataset_Split(f"{base_data_path}/{dset}", 
+                                train=data[dset]["train"],
+                                val=data[dset]["val"],
+                                test=data[dset]["test"])
+            
+            self.dataset_splits.append(s)
 
     def get_dict(self) -> dict:
         dic = dict()

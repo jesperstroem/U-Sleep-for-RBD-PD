@@ -42,9 +42,9 @@ def create_global_split(dataset_filepaths: list[str]):
     
     return split_data
 
-def create_loso_split(dataset_filepaths: list[str],
-                      num_folds,
-                      num_validation_subjects = 1) -> [Split]:
+def create_split(dataset_filepaths: list[str],
+                 num_folds,
+                 num_validation_subjects = 1) -> [Split]:
     all_subs = []
     all_split_data: list[Split] = []
 
@@ -81,9 +81,32 @@ def create_loso_split(dataset_filepaths: list[str],
     return all_split_data
 
 class CV_Experiment:
+    def load_existing_split(self):
+        cwd = os.getcwd()
+        split_path = f"{cwd}/splits/{self.experiment_name}"
+        base_data_path = self.base_data_path
+
+        all_splits = os.listdir(split_path)
+        all_splits = [f"{split_path}/{path}" for path in all_splits]
+
+        split_data = []
+
+        for split in all_splits:
+            s = Split(split, base_data_path)
+            split_data.append(s)
+
+        return split_data
+
+    def experiment_exists(self):
+        cwd = os.getcwd()
+        split_path = f"{cwd}/splits/{self.experiment_name}"
+        exists = os.path.exists(split_path)
+        return exists
+
     def __init__(self,
                  base_net: USleep_Lightning,
-                 dataset_paths: list[str],
+                 base_data_path: str,
+                 datasets: list[str],
                  training_epochs: int,
                  batch_size: int,
                  num_folds: int,
@@ -94,6 +117,7 @@ class CV_Experiment:
                  test_first: bool = False,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
+                 continue_existing: bool = False,
                  neptune_run: neptune.Run | None = None):
         """_summary_
 
@@ -111,9 +135,11 @@ class CV_Experiment:
             neptune_run (neptune.Run | None, optional): An initialized neptune logging run. Defaults to None.
         """
 
+        self.continue_existing = continue_existing
         self.batches_per_epoch = batches_per_epoch
         self.pick_all_channels = pick_all_channels
-        self.dataset_paths = dataset_paths
+        self.base_data_path = base_data_path
+        self.dataset_paths = [f"{base_data_path}/{p}" for p in datasets]
         self.pipeline_configuration = pipeline_configuration
         self.experiment_name = experiment_name
         self.training_epochs = training_epochs
@@ -123,16 +149,22 @@ class CV_Experiment:
         self.earlystopping_patience = earlystopping_patience
         self.num_folds = num_folds
         self.num_validation_subjects = num_validation_subjects
-        self.split_data = create_loso_split(dataset_paths,
-                                            num_folds=num_folds,
-                                            num_validation_subjects=num_validation_subjects)
+
+        if continue_existing == True and self.experiment_exists():
+            self.split_data = self.load_existing_split()
+        else:
+            self.split_data = create_split(self.dataset_paths,
+                                           num_folds=num_folds,
+                                           num_validation_subjects=num_validation_subjects)
         
-        save_split_data(self.split_data, experiment_name)
+            save_split_data(self.split_data, experiment_name)
 
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
 
     def run_training(self):
+        cwd = os.getcwd()
+
         if self.test_first == True:
             global_split = create_global_split(self.dataset_paths)
             wrapper = self.__create_wrapper(global_split, self.batch_size)
@@ -146,9 +178,12 @@ class CV_Experiment:
             self.__test(trainer, wrapper, base_net, split_name="Global Test", load_best_model=False)
 
         for i, split in enumerate(self.split_data):
-            # f = list(filter(lambda x: len(x.test) > 0, split.dataset_splits))
-            # split_name = f[0].test[0]
             split_name = f"Split_{i}"
+            results_path = f"{cwd}/results/{self.experiment_name}/split_{split_name}"
+
+            if self.continue_existing == True and os.path.exists(results_path) == True:
+                print(f"Skipping split {i} since results are already present")
+                continue
 
             wrapper = self.__create_wrapper(split, self.batch_size)
 
