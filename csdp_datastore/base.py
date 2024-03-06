@@ -287,7 +287,12 @@ class BaseDataset(ABC):
             record_list = paths_dict[k]
             
             for r in record_list:
-                for file_path in r:
+                name, psg, hyp = r
+                print(name)
+                print(psg)
+                print(hyp)
+
+                for file_path in [psg, hyp]:
                     assert os.path.exists(file_path), f"Datapath: {file_path}"
         
     def filter_channel(self, channel, fs):
@@ -415,7 +420,7 @@ class BaseDataset(ABC):
         pq.write_table(hyp_table, output_path + "hypnogram.parquet")
         
         
-    def write_record_to_database_hdf5(self, output_basepath, subject_number, record_number, x, y): 
+    def write_record_to_database_hdf5(self, output_basepath, subject_id, record_id, x, y): 
         """
         Function to write PSG data along with labels to the shared database containing all datasets in HDF5 format.
         """
@@ -427,8 +432,8 @@ class BaseDataset(ABC):
             data_group = f.require_group("data")
 
             # Require subject group, since we want to use the existing one, if subject has more records
-            grp_subject = data_group.require_group(f"{subject_number}")
-            subgrp_record = grp_subject.create_group(f"{record_number}")
+            grp_subject = data_group.require_group(f"{subject_id}")
+            subgrp_record = grp_subject.create_group(f"{record_id}")
             
             subsubgrp_psg = subgrp_record.create_group("psg")
             
@@ -436,7 +441,7 @@ class BaseDataset(ABC):
                 subsubgrp_psg.create_dataset(channel_name, data=channel_data)
             
             subgrp_record.create_dataset("hypnogram", data=y)
-            self.log_info('Successfully wrote record to hdf5 file', subject_number, record_number)
+            self.log_info('Successfully wrote record to hdf5 file', subject_id, record_id)
     
     def download(self):
         self.log_warning('Download function was called, but no download functionality has been implemented')
@@ -461,10 +466,11 @@ class BaseDataset(ABC):
             os.remove(file_path)
         
         for subject_number in subject_list:
-            record_number = 0
             
             for record in paths_dict[subject_number]:
-                psg = self.read_psg(record)
+                record_name, psg_path, hyp_path = record
+
+                psg = self.read_psg((psg_path, hyp_path))
                 
                 if psg == None:
                     self.log_error("PSG could not be read, skipping it", subject_number, record)
@@ -478,12 +484,10 @@ class BaseDataset(ABC):
                 self.write_function(
                     f"{self.output_path}/",
                     subject_number,
-                    record_number,
+                    record_name,
                     x, 
                     y
                 )
-                
-                record_number = record_number + 1
         
         self.save_dataset_metadata()
         self.log_info('Successfully ported dataset')
