@@ -9,7 +9,19 @@ from pathlib import Path
 from h5py import File
 from enum import Enum, auto, IntEnum
 from .logger import LoggingModule, EventSeverity
+from scipy import signal
 
+class FilterSettings():
+    def __init__(self,
+                 win_len = 5,
+                 cutoffs: list[float] = [0.1, 40]):
+        assert len(cutoffs) == 2
+
+        self.cutoffs = cutoffs
+        self.win_len = win_len
+
+    cutoffs: list[float]
+    win_len: int
 
 class BaseDataset(ABC):
     def __init__(
@@ -18,6 +30,8 @@ class BaseDataset(ABC):
         output_path: str,
         overwrite_existing: bool = True,
         max_num_subjects: int = None, 
+        filter: bool = True,
+        filtersettings: FilterSettings = FilterSettings(),
         scale_and_clip: bool = True,
         output_sample_rate: int = 128,
         data_format: str ="hdf5",
@@ -42,6 +56,9 @@ class BaseDataset(ABC):
         self.scale_and_clip = scale_and_clip
         self.output_sample_rate = output_sample_rate
         self.overwrite_existing = overwrite_existing
+        self.filter = filter
+
+        self.filtersettings = filtersettings
         
         if data_format == "hdf5":
             self.write_function = self.write_record_to_database_hdf5
@@ -272,9 +289,30 @@ class BaseDataset(ABC):
             record_list = paths_dict[k]
             
             for r in record_list:
-                for file_path in r:
+                name, psg, hyp = r
+                print(name)
+                print(psg)
+                print(hyp)
+
+                for file_path in [psg, hyp]:
                     assert os.path.exists(file_path), f"Datapath: {file_path}"
-    
+        
+    def filter_channel(self, channel, fs):
+        win_len = self.filtersettings.win_len
+        l_cut = self.filtersettings.cutoffs[0]
+        h_cut = self.filtersettings.cutoffs[1]
+
+        orderFIR = int(fs * win_len)
+        orderInput = int(fs)
+        f = np.linspace(start=0, stop=(fs / 2), num=orderInput)
+
+        mag_all = np.zeros(orderInput)
+        mag_all[(f > l_cut) & (f < h_cut)] = 1
+        filter = signal.firwin2(orderFIR + 1, f, mag_all, fs=fs)
+
+        channel_filt = signal.filtfilt(filter, 1, channel)
+        return channel_filt
+
     def __map_channels(self, dic, y_len):
         new_dict = dict()
 
@@ -292,6 +330,9 @@ class BaseDataset(ABC):
             
             assert len(data) == y_len*sample_rate*30, "Length of data does not match the length of labels"
             
+            if self.filter:
+                data = self.filter_channel(data, sample_rate)
+
             if self.scale_and_clip:
                 data = self.scale_channel(data)
                 data = self.clip_channel(data)
@@ -344,7 +385,28 @@ class BaseDataset(ABC):
 
         return channel_resampled
     
-    
+    def save_dataset_metadata(self):
+        filtering_used = self.filter
+        filtersettings = self.filtersettings
+        output_samplerate = self.output_sample_rate
+        
+        file_path = f"{self.output_path}{self.dataset_name()}.hdf5"
+
+        try:
+            with File(file_path, "a") as f:
+                meta_grp = f.create_group("meta")
+
+                filter_grp = meta_grp.create_group("filtersettings")
+                filter_grp.create_dataset("filter_applied", data=filtering_used)
+                filter_grp.create_dataset("win_len", data=filtersettings.win_len)
+                filter_grp.create_dataset("cutoffs", data=filtersettings.cutoffs)
+
+                meta_grp.create_dataset("output_samplerate", data=output_samplerate)
+
+                self.log_info('Successfully saved metadata')
+        except Exception as error:
+            self.log_error(f"Could not save metadata due to error: {error}")
+
     def write_record_to_database_parquet(self, output_basepath, subject_number, record_number, x, y):
         """
         Function to write PSG data along with labels to the shared database containing all datasets in Parquet format.
@@ -360,7 +422,7 @@ class BaseDataset(ABC):
         pq.write_table(hyp_table, output_path + "hypnogram.parquet")
         
         
-    def write_record_to_database_hdf5(self, output_basepath, subject_number, record_number, x, y): 
+    def write_record_to_database_hdf5(self, output_basepath, subject_id, record_id, x, y): 
         """
         Function to write PSG data along with labels to the shared database containing all datasets in HDF5 format.
         """
@@ -369,9 +431,11 @@ class BaseDataset(ABC):
         file_path = f"{output_basepath}{self.dataset_name()}.hdf5"
         
         with File(file_path, "a") as f:
+            data_group = f.require_group("data")
+
             # Require subject group, since we want to use the existing one, if subject has more records
-            grp_subject = f.require_group(f"{subject_number}")
-            subgrp_record = grp_subject.require_group(f"{record_number}")
+            grp_subject = data_group.require_group(f"{subject_id}")
+            subgrp_record = grp_subject.create_group(f"{record_id}")
             
             subsubgrp_psg = subgrp_record.create_group("psg")
             
@@ -379,7 +443,7 @@ class BaseDataset(ABC):
                 subsubgrp_psg.create_dataset(channel_name, data=channel_data)
             
             subgrp_record.create_dataset("hypnogram", data=y)
-            self.log_info('Successfully wrote record to hdf5 file', subject_number, record_number)
+            self.log_info('Successfully wrote record to hdf5 file', subject_id, record_id)
     
     def download(self):
         self.log_warning('Download function was called, but no download functionality has been implemented')
@@ -394,10 +458,7 @@ class BaseDataset(ABC):
                     return False
                 
                 subject_group = f[subject_number]
-                # print(subject_group.keys())
-                # print(subject_number)
-                # print(record_number)
-                # exit()
+
                 if str(record_number) not in subject_group.keys():
                     return False
 
@@ -410,10 +471,16 @@ class BaseDataset(ABC):
 
         self.__check_paths(paths_dict)
 
+        subject_list = list(paths_dict.keys())[:self.max_num_subjects]
+
+        if len(subject_list) == 0:
+            self.log_error("No data found, could not port dataset")
+            return
+
         file_path = f"{self.output_path}/{self.dataset_name()}.hdf5"
         exists = os.path.exists(file_path)
-        
-        if exists and self.overwrite_existing == True:
+
+        if exists:
             self.log_warning("HDF5 file already exists. Removing it")
             os.remove(file_path)
 
@@ -424,15 +491,15 @@ class BaseDataset(ABC):
             return
 
         for subject_number in subject_list:
-            record_number = 0
-
             for record in paths_dict[subject_number]:
+                record_name, psg_path, hyp_path = record
+
                 if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_number) == True):
                     self.log_info(f"Skipping record, since it already exists", subject=subject_number, record=record)
                     record_number = record_number + 1
                     continue
 
-                psg = self.read_psg(record)
+                psg = self.read_psg((psg_path, hyp_path))
                 
                 if psg == None:
                     self.log_error("PSG could not be read, skipping it", subject_number, record)
@@ -446,12 +513,10 @@ class BaseDataset(ABC):
                 self.write_function(
                     f"{self.output_path}/",
                     subject_number,
-                    record_number,
+                    record_name,
                     x, 
                     y
                 )
-                
-                record_number = record_number + 1
         
+        self.save_dataset_metadata()
         self.log_info('Successfully ported dataset')
-  
