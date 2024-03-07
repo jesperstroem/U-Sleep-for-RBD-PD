@@ -388,6 +388,7 @@ class BaseDataset(ABC):
     def save_dataset_metadata(self):
         filtering_used = self.filter
         filtersettings = self.filtersettings
+        scaled_and_clipped = self.scale_and_clip
         output_samplerate = self.output_sample_rate
         
         file_path = f"{self.output_path}{self.dataset_name()}.hdf5"
@@ -402,6 +403,7 @@ class BaseDataset(ABC):
                 filter_grp.create_dataset("cutoffs", data=filtersettings.cutoffs)
 
                 meta_grp.create_dataset("output_samplerate", data=output_samplerate)
+                meta_grp.create_dataset("scaled_and_clipped", data=scaled_and_clipped)
 
                 self.log_info('Successfully saved metadata')
         except Exception as error:
