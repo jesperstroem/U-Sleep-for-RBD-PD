@@ -290,9 +290,6 @@ class BaseDataset(ABC):
             
             for r in record_list:
                 name, psg, hyp = r
-                print(name)
-                print(psg)
-                print(hyp)
 
                 for file_path in [psg, hyp]:
                     assert os.path.exists(file_path), f"Datapath: {file_path}"
@@ -496,9 +493,8 @@ class BaseDataset(ABC):
             for record in paths_dict[subject_number]:
                 record_name, psg_path, hyp_path = record
 
-                if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_number) == True):
+                if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_name) == True):
                     self.log_info(f"Skipping record, since it already exists", subject=subject_number, record=record)
-                    record_number = record_number + 1
                     continue
 
                 psg = self.read_psg((psg_path, hyp_path))

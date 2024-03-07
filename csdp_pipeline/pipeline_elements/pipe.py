@@ -28,6 +28,7 @@ class Dataset_Split():
             return self.test
 
 class Split():
+    id: str
     dataset_splits: list[Dataset_Split]
 
     def __init__(self, split_path = None, base_data_path = None):
@@ -38,6 +39,8 @@ class Split():
 
         with open(split_path) as f:
             data = json.load(f)
+
+        self.id = os.path.basename(split_path.rstrip(".json"))
         
         datasets = list(map(lambda x: x[0], data.items()))
 

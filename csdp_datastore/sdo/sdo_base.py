@@ -12,6 +12,7 @@ class SleepdataOrg(BaseDataset):
         self, 
         dataset_path: str, 
         output_path: str,
+        overwrite_existing = False,
         filter: bool = True,
         filtersettings = FilterSettings(),
         download_token: str = None,
@@ -24,6 +25,7 @@ class SleepdataOrg(BaseDataset):
         
         super().__init__(dataset_path,
                          output_path,
+                         overwrite_existing,
                          max_num_subjects,
                          filter,
                          filtersettings,
@@ -110,6 +112,7 @@ class SleepdataOrg(BaseDataset):
             hyp_file_path = psg_file_path.replace('/'+psg+'/', '/'+hyp+'/', 1).replace('.edf', '-profusion.xml', 1)
             splits = hyp_file_path.split("-")
             subject_number = splits[-2]
+            record_name = splits[-3]
             
             assert os.path.exists(psg_file_path), f"File {psg_file_path} does not exist"
             
@@ -119,7 +122,7 @@ class SleepdataOrg(BaseDataset):
                 self.log_warning(f"File does not exist, skipping this record", subject=None, record=hyp_file_path)
                 continue
             
-            paths_dict.setdefault(subject_number, []).append((psg_file_path, hyp_file_path))
+            paths_dict.setdefault(subject_number, []).append((record_name, psg_file_path, hyp_file_path))
         
         assert len(paths_dict) > 0, "No filepaths detected"
 

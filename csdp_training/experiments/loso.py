@@ -22,10 +22,10 @@ def save_split_data(split_data: list[Split], exp_name):
 
     os.makedirs(f"{cwd}/splits/{exp_name}")
 
-    for i, split in enumerate(split_data):
+    for _, split in enumerate(split_data):
         dic = split.get_dict()
         
-        with open(f"{cwd}/splits/{exp_name}/{i}.json", 'w') as fp:
+        with open(f"{cwd}/splits/{exp_name}/{split.id}.json", 'w') as fp:
             json.dump(dic, fp)
 
 def create_global_split(dataset_filepaths: list[str]):
@@ -57,9 +57,10 @@ def create_split(dataset_filepaths: list[str],
     
     kf = KFold(n_splits=num_folds,
                shuffle=True)
-
-    for _, (train_index, test_index) in enumerate(kf.split(all_subs)):
+    
+    for i, (train_index, test_index) in enumerate(kf.split(all_subs)):
         split_data = Split()
+        split_data.id = i
         
         train_records = [all_subs[i] for i in train_index]
 
@@ -177,12 +178,13 @@ class CV_Experiment:
             
             self.__test(trainer, wrapper, base_net, split_name="Global Test", load_best_model=False)
 
-        for i, split in enumerate(self.split_data):
-            split_name = f"Split_{i}"
+        for _, split in enumerate(self.split_data):
+            split_name = f"Split_{split.id}"
+            
             results_path = f"{cwd}/results/{self.experiment_name}/split_{split_name}"
 
             if self.continue_existing == True and os.path.exists(results_path) == True:
-                print(f"Skipping split {i} since results are already present")
+                print(f"Skipping split {split.id} since results are already present")
                 continue
 
             wrapper = self.__create_wrapper(split, self.batch_size)
