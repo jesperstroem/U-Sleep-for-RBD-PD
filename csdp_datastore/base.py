@@ -388,7 +388,7 @@ class BaseDataset(ABC):
         scaled_and_clipped = self.scale_and_clip
         output_samplerate = self.output_sample_rate
         
-        file_path = f"{self.output_path}{self.dataset_name()}.hdf5"
+        file_path = f"{self.output_path}/{self.dataset_name()}.hdf5"
 
         try:
             with File(file_path, "a") as f:
