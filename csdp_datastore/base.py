@@ -13,15 +13,15 @@ from scipy import signal
 
 class FilterSettings():
     def __init__(self,
-                 win_len = 5,
+                 order = 5,
                  cutoffs: list[float] = [0.1, 40]):
         assert len(cutoffs) == 2
 
         self.cutoffs = cutoffs
-        self.win_len = win_len
+        self.order = order
 
     cutoffs: list[float]
-    win_len: int
+    order: int
 
 class BaseDataset(ABC):
     def __init__(
@@ -295,20 +295,13 @@ class BaseDataset(ABC):
                     assert os.path.exists(file_path), f"Datapath: {file_path}"
         
     def filter_channel(self, channel, fs):
-        win_len = self.filtersettings.win_len
+        order = self.filtersettings.order
         l_cut = self.filtersettings.cutoffs[0]
         h_cut = self.filtersettings.cutoffs[1]
 
-        orderFIR = int(fs * win_len)
-        orderInput = int(fs)
-        f = np.linspace(start=0, stop=(fs / 2), num=orderInput)
-
-        mag_all = np.zeros(orderInput)
-        mag_all[(f > l_cut) & (f < h_cut)] = 1
-        filter = signal.firwin2(orderFIR + 1, f, mag_all, fs=fs)
-
-        channel_filt = signal.filtfilt(filter, 1, channel)
-        return channel_filt
+        sos = signal.butter(order, [l_cut, h_cut], btype='bandpass', fs=fs, output="sos")
+        channel = signal.sosfiltfilt(sos, channel)
+        return channel
 
     def __map_channels(self, dic, y_len):
         new_dict = dict()
@@ -396,7 +389,7 @@ class BaseDataset(ABC):
 
                 filter_grp = meta_grp.create_group("filtersettings")
                 filter_grp.create_dataset("filter_applied", data=filtering_used)
-                filter_grp.create_dataset("win_len", data=filtersettings.win_len)
+                filter_grp.create_dataset("order", data=filtersettings.order)
                 filter_grp.create_dataset("cutoffs", data=filtersettings.cutoffs)
 
                 meta_grp.create_dataset("output_samplerate", data=output_samplerate)
