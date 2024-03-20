@@ -1,15 +1,7 @@
 from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader
-from csdp_pipeline.pipeline_elements.pipeline_dataset import PipelineDataset
-from csdp_pipeline.factories.pipeline_factory import (
-    USleep_Pipeline_Factory,
-    LSeqSleepNet_Pipeline_Factory,
-)
-from csdp_pipeline.pipeline_elements.pipe import ISample, Pipeline, IPipe, PipelineConfiguration, ISampler, SamplerConfiguration
-from csdp_pipeline.pipeline_elements.sampler import Random_Sampler
-from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
-from csdp_training.utility import create_split_file
-from functools import partial
+from csdp_pipeline.pipeline_elements.pipeline import PipelineDataset, PipelineConfiguration
+from csdp_pipeline.pipeline_elements.samplers import Random_Sampler, SamplerConfiguration, Determ_sampler
 
 class IDataloader_Factory(ABC):
     @abstractmethod
@@ -24,7 +16,7 @@ class IDataloader_Factory(ABC):
     def testing_loader(self, num_workers):
         pass
 
-class Dataloader_Wrapper(IDataloader_Factory):
+class Dataloader_Factory(IDataloader_Factory):
 
     def __init__(
         self,
@@ -115,61 +107,61 @@ class Dataloader_Wrapper(IDataloader_Factory):
 
         return testloader
 
-class DefaultUSleepDataloader(IDataloader_Factory):
-    def __init__(self,
-                 gradient_steps: int,
-                batch_size: int,
-                hdf5_base_path: str,
-                trainsets: list[str],
-                valsets: list[str],
-                testsets: list[str],
-                data_split_path: str,
-                sub_percentage = 1.0):
+# class DefaultUSleepDataloader(IDataloader_Factory):
+#     def __init__(self,
+#                  gradient_steps: int,
+#                 batch_size: int,
+#                 hdf5_base_path: str,
+#                 trainsets: list[str],
+#                 valsets: list[str],
+#                 testsets: list[str],
+#                 data_split_path: str,
+#                 sub_percentage = 1.0):
         
-        train_sampler = Random_Sampler(
-                hdf5_base_path,
-                trainsets,
-                split_type="train",
-                num_epochs=35,
-                split_file_path=data_split_path,
-                subject_percentage=sub_percentage,
-        )
+#         train_sampler = Random_Sampler(
+#                 hdf5_base_path,
+#                 trainsets,
+#                 split_type="train",
+#                 num_epochs=35,
+#                 split_file_path=data_split_path,
+#                 subject_percentage=sub_percentage,
+#         )
 
-        val_sampler = Determ_sampler(
-                hdf5_base_path,
-                valsets,
-                split_type="val",
-                split_file=data_split_path,
-                get_all_channels= False,
-            )
+#         val_sampler = Determ_sampler(
+#                 hdf5_base_path,
+#                 valsets,
+#                 split_type="val",
+#                 split_file=data_split_path,
+#                 get_all_channels= False,
+#             )
         
-        test_sampler = Determ_sampler(
-                hdf5_base_path,
-                testsets,
-                split_type="test",
-                split_file=data_split_path,
-                get_all_channels= True,
-            )
+#         test_sampler = Determ_sampler(
+#                 hdf5_base_path,
+#                 testsets,
+#                 split_type="test",
+#                 split_file=data_split_path,
+#                 get_all_channels= True,
+#             )
 
-        samplers = SamplerConfiguration(train_sampler,
-                                        val_sampler,
-                                        test_sampler)
+#         samplers = SamplerConfiguration(train_sampler,
+#                                         val_sampler,
+#                                         test_sampler)
 
-        pipelines = PipelineConfiguration()
+#         pipelines = PipelineConfiguration()
 
-        self.fac = Dataloader_Factory(gradient_steps,
-                                      batch_size,
-                                      samplers,
-                                      pipelines)
+#         self.fac = Dataloader_Factory(gradient_steps,
+#                                       batch_size,
+#                                       samplers,
+#                                       pipelines)
 
-    def training_loader(self, num_workers):
-        return self.fac.training_loader(num_workers)
+#     def training_loader(self, num_workers):
+#         return self.fac.training_loader(num_workers)
     
-    def validation_loader(self, num_workers):
-        return self.fac.validation_loader(num_workers)
+#     def validation_loader(self, num_workers):
+#         return self.fac.validation_loader(num_workers)
     
-    def testing_loader(self, num_workers):
-        return self.fac.testing_loader(num_workers)
+#     def testing_loader(self, num_workers):
+#         return self.fac.testing_loader(num_workers)
 
 
 

@@ -171,18 +171,18 @@ class USleep_Lightning(Base_Lightning):
         self.validation_preds.append(pred)
 
     def run_test(self, 
-                 trainer: pl.Trainer, 
-                 net, 
+                 trainer: pl.Trainer,
                  loader,
                  output_folder_prefix,
                  load_best_model = True):
+        self.eval()
         
         self.output_folder_prefix = output_folder_prefix
 
         if load_best_model == True:
-            _ = trainer.test(net, loader, ckpt_path="best")
+            _ = trainer.test(self, loader, ckpt_path="best")
         else:
-            _ = trainer.test(net, loader)
+            _ = trainer.test(self, loader)
 
     def test_step(self, batch: dict, _):
         # Step per record

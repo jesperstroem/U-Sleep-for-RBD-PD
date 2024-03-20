@@ -4,15 +4,14 @@ import torch
 from neptune.utils import stringify_unsupported
 import h5py
 from sklearn.model_selection import train_test_split
-from csdp_pipeline.pipeline_elements.sampler import Random_Sampler
-from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
-from csdp_pipeline.pipeline_elements.pipe import PipelineConfiguration, SamplerConfiguration
-from csdp_pipeline.factories.dataloader_factory import Dataloader_Wrapper
+from csdp_pipeline.pipeline_elements.samplers import Random_Sampler, Determ_sampler, SamplerConfiguration
+from csdp_pipeline.pipeline_elements.pipeline import PipelineConfiguration
+from csdp_pipeline.factories.dataloader_factory import Dataloader_Factory
 from csdp_training.lightning_models.usleep import USleep_Lightning
 from copy import deepcopy
 from pytorch_lightning.loggers import NeptuneLogger
 import neptune
-from csdp_pipeline.pipeline_elements.pipe import Split, Dataset_Split
+from csdp_pipeline.pipeline_elements.models import Split, Dataset_Split
 from sklearn.model_selection import KFold
 import os
 import json
@@ -206,7 +205,7 @@ class CV_Experiment:
 
     def __train(self,
                 net: USleep_Lightning,
-                wrapper: Dataloader_Wrapper,
+                wrapper: Dataloader_Factory,
                 trainer: pl.Trainer):
         
         train_loader = wrapper.training_loader(num_workers=8)
@@ -219,7 +218,7 @@ class CV_Experiment:
 
     def __test(self,
                trainer: pl.Trainer,
-               wrapper: Dataloader_Wrapper,
+               wrapper: Dataloader_Factory,
                net: USleep_Lightning,
                split_name: str,
                load_best_model = True):        
@@ -289,7 +288,7 @@ class CV_Experiment:
         
         pipes = self.pipeline_configuration
 
-        wrapper = Dataloader_Wrapper(batch_size,
+        wrapper = Dataloader_Factory(batch_size,
                                      samplers,
                                      pipes)
     

@@ -1,11 +1,12 @@
-from csdp_pipeline.pipeline_elements.pipe import ISampler, ISample, ITag
+from csdp_pipeline.pipeline_elements.models import ISample, ITag
+from csdp_pipeline.pipeline_elements.samplers import ISampler
 import h5py
 import torch
 import math
 import random
 import numpy as np
 import os
-from csdp_pipeline.pipeline_elements.pipe import Split, Dataset_Split
+from csdp_pipeline.pipeline_elements.models import Split, Dataset_Split
 
 class Full_Eval_Dataset_Sampler(ISampler):
     def __init__(self,
