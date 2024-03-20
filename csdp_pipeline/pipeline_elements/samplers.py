@@ -45,24 +45,32 @@ class Random_Sampler(ISampler):
                  split_type: str, 
                  num_epochs: int, 
                  num_iterations: int,
-                 get_all_channels: bool = False,
-                 subject_percentage = 1):
+                 get_all_channels: bool = False):
         self.split_type = split_type
         self.split_data = split_data
         self.get_all_channels = get_all_channels
-        self.subject_percentage = subject_percentage
-        self.subjects, self.num_records = self.__list_files()
+        self.num_records = self.__count_records()
 
-        print(f"Number of {split_type} subjects: {len(self.subjects)} records: {self.num_records} - subject percentage: {subject_percentage}")
+        assert split_type == "train"
 
-        try:
-            self.probs = self.calc_probs()
-        except:
-            self.probs = []
+        self.probs = self.calc_probs()
+
+        self.print_report()
             
         self.epoch_length = num_epochs
         self.num_samples = num_iterations
-        
+    
+    def print_report(self):
+        probs = self.probs
+        datasets = [split.dataset_filepath for split in self.split_data.dataset_splits]
+        num_records = self.num_records
+
+        print(f"Training on datasets {datasets}. The number of records are {num_records}, which yields stratified sampling probabilities {probs}")
+        print("Training subjects overview:")
+
+        for dataset_split in self.split_data.dataset_splits:
+            print(f"{dataset_split.dataset_filepath}: {dataset_split.train}")
+
     def get_sample(self, index: int) -> ISample:
         success = False
             
@@ -202,8 +210,7 @@ class Random_Sampler(ISampler):
                 
         return channels
 
-    def __list_files(self):
-        subjects = []
+    def __count_records(self):
         num_records = []
         
         for f in self.split_data.dataset_splits:
@@ -211,13 +218,8 @@ class Random_Sampler(ISampler):
 
             with h5py.File(file_path, "r") as hdf5:
                 subs = f.get_subjects_from_string(self.split_type)
-                    
-                num_subjects = len(subs)
-                num_subjects_to_use = math.ceil(num_subjects*self.subject_percentage)
-                subs = subs[0:num_subjects_to_use]
 
                 tot_records = 0
-                subjects_to_add = []
                 
                 for subj_key in subs:
                     try:
@@ -228,12 +230,10 @@ class Random_Sampler(ISampler):
                         
                     records = len(subj.keys())
                     tot_records += records
-                    subjects_to_add.append(subj_key)
                 
                 num_records.append(tot_records)
-                subjects.append(subjects_to_add)
 
-        return subjects, num_records
+        return num_records
 
 
 class Determ_sampler(ISampler):
@@ -249,6 +249,8 @@ class Determ_sampler(ISampler):
         self.num_samples = len(self.records)
         self.get_all_channels = get_all_channels
 
+        self.print_report()
+
     def get_sample(self, index: int):
         sample: ISample = self.__get_sample(index)
 
@@ -257,6 +259,9 @@ class Determ_sampler(ISampler):
             sample.eog = sample.eeg
 
         return sample
+    
+    def print_report(self):
+        print(f"Records for {self.split_type}: {self.records}")
 
     def list_records(self):
         list_of_records = []

@@ -19,7 +19,7 @@ class Dataset_Split():
         self.train = train
         self.val = val
         self.test = test
-    
+
     def get_subjects_from_string(self, str):
         if str == "train":
             return self.train
