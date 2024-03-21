@@ -55,7 +55,7 @@ class Random_Sampler(ISampler):
 
         self.probs = self.calc_probs()
 
-        self.print_report()
+        #self.print_report()
             
         self.epoch_length = num_epochs
         self.num_samples = num_iterations
@@ -125,12 +125,16 @@ class Random_Sampler(ISampler):
             hyp = hdf5[r_subject][r_record]["hypnogram"][()]
             psg = list(hdf5[r_subject][r_record]["psg"].keys())
 
-            if self.get_all_channels == True:
-                eegs = self.__pick_all(psg, "EEG")
-                eogs = self.__pick_all(psg, "EOG")
-            else:
-                eegs = self.__pick_random_channel(psg, "EEG")
-                eogs = self.__pick_random_channel(psg, "EOG")
+            try:
+                if self.get_all_channels == True:
+                    eegs = self.__pick_all(psg, "EEG")
+                    eogs = self.__pick_all(psg, "EOG")
+                else:
+                    eegs = self.__pick_random_channel(psg, "EEG")
+                    eogs = self.__pick_random_channel(psg, "EOG")
+            except:
+                print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
+                return None
 
             # Choose random index of a random label
             label_set = np.unique(hyp)
@@ -249,7 +253,7 @@ class Determ_sampler(ISampler):
         self.num_samples = len(self.records)
         self.get_all_channels = get_all_channels
 
-        self.print_report()
+        #self.print_report()
 
     def get_sample(self, index: int):
         sample: ISample = self.__get_sample(index)
