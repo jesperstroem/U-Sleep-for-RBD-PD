@@ -32,6 +32,8 @@ def create_global_split(dataset_filepaths: list[str]):
     
     for dataset_filepath in dataset_filepaths:
         with h5py.File(dataset_filepath, "r") as hdf5:
+            hdf5 = hdf5["data"]
+
             subs = list(hdf5.keys())
 
         split_data.dataset_splits.append(Dataset_Split(dataset_filepath,
@@ -49,6 +51,7 @@ def create_split(dataset_filepaths: list[str],
 
     for file in dataset_filepaths:
         with h5py.File(file, "r") as hdf5:
+            hdf5 = hdf5["data"]
             subs = list(hdf5.keys())
 
             subs = [(file, sub) for sub in subs]

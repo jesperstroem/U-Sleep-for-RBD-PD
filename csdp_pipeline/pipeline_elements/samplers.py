@@ -115,6 +115,7 @@ class Random_Sampler(ISampler):
             raise ValueError(f"No subjects in split type: {self.split_type} for dataset {r_dataset}")
 
         with h5py.File(r_dataset.dataset_filepath, "r") as hdf5:
+            hdf5 = hdf5["data"]
 
             # Choose random subject
             records = list(hdf5[r_subject].keys())
@@ -221,6 +222,8 @@ class Random_Sampler(ISampler):
             file_path = f.dataset_filepath
 
             with h5py.File(file_path, "r") as hdf5:
+                hdf5 = hdf5["data"]
+
                 subs = f.get_subjects_from_string(self.split_type)
 
                 tot_records = 0
@@ -273,6 +276,7 @@ class Determ_sampler(ISampler):
 
         for f in datasets:
             with h5py.File(f.dataset_filepath, "r") as hdf5:
+                hdf5 = hdf5["data"]
 
                 subjects = f.get_subjects_from_string(self.split_type)
                 
@@ -300,6 +304,8 @@ class Determ_sampler(ISampler):
         rec = r[2]
 
         with h5py.File(dataset, "r") as hdf5:
+            hdf5 = hdf5["data"]
+
             y = hdf5[subject][rec]["hypnogram"][()]
 
             psg_channels = list(hdf5[subject][rec]["psg"].keys())
