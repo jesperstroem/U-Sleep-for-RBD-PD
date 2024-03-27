@@ -101,8 +101,7 @@ class CV_Experiment:
         #if continue_existing == True and self.experiment_exists():
         #    self.split_data = self.load_existing_split()
         #else:
-        self.split_data: [Split] = self.__create_split(base_data_path,
-                                                       self.dataset_paths,
+        self.split_data: [Split] = self.__create_split(self.dataset_paths,
                                                        num_folds=num_folds,
                                                        num_validation_subjects=num_validation_subjects)
         
@@ -115,7 +114,8 @@ class CV_Experiment:
         cwd = os.getcwd()
 
         if self.test_first == True:
-            global_split = self.__create_global_split(self.dataset_paths)
+            global_split: Split = self.__create_global_split(self.dataset_paths)
+
             wrapper = self.__create_wrapper(global_split, self.batch_size)
 
             trainer = self.__init_trainer(max_epochs=self.training_epochs,
@@ -129,11 +129,11 @@ class CV_Experiment:
         for _, split in enumerate(self.split_data):
             split_name = f"Split_{split.id}"
             
-            results_path = f"{cwd}/results/{self.experiment_name}/split_{split_name}"
+            #results_path = f"{cwd}/results/{self.experiment_name}/split_{split_name}"
 
-            if self.continue_existing == True and os.path.exists(results_path) == True:
-                print(f"Skipping split {split.id} since results are already present")
-                continue
+            # if self.continue_existing == True and os.path.exists(results_path) == True:
+            #     print(f"Skipping split {split.id} since results are already present")
+            #     continue
 
             wrapper = self.__create_wrapper(split, self.batch_size)
 
@@ -173,8 +173,7 @@ class CV_Experiment:
                load_best_model = True):        
         loader = wrapper.testing_loader(num_workers=1)
 
-        net.run_test(trainer, 
-                     net, 
+        net.run_test(trainer,
                      loader, 
                      output_folder_prefix=f"{self.experiment_name}/split_{split_name}",
                      load_best_model=load_best_model)
@@ -262,9 +261,9 @@ class CV_Experiment:
                 shuffle=True)
         
         for i, (train_index, test_index) in enumerate(kf.split(all_subs)):
-            split_data = Split()
-            split_data.base_data_path = self.base_data_path
-            split_data.id = i
+            split_data = Split(id=i,
+                               dataset_splits=[],
+                               base_data_path=self.base_data_path)
             
             train_records = [all_subs[i] for i in train_index]
 
@@ -274,7 +273,11 @@ class CV_Experiment:
             test_records = [all_subs[i] for i in test_index]
             
             for file in dataset_filepaths:
-                dataset_split = Dataset_Split(file)
+                dataset_split = Dataset_Split(file,
+                                              train=[],
+                                              val=[],
+                                              test=[])
+                
                 dataset_split.train = [x[1] for x in list(filter(lambda x: file == x[0], train_records))]
                 dataset_split.val = [x[1] for x in list(filter(lambda x: file == x[0], val_records))]
                 dataset_split.test = [x[1] for x in list(filter(lambda x: file == x[0], test_records))]
@@ -296,9 +299,9 @@ class CV_Experiment:
             split.dump_file(path=f"{cwd}/splits/{experiment_name}", name=split.id)
 
     def __create_global_split(self, dataset_filepaths: list[str]):
-        split_data = Split()
-        split_data.id = "test"
-        split_data.base_data_path = self.base_data_path
+        split_data = Split(id="test",
+                           dataset_splits=[],
+                           base_data_path=self.base_data_path)
         
         for dataset_filepath in dataset_filepaths:
             with h5py.File(dataset_filepath, "r") as hdf5:

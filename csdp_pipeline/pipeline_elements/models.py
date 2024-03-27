@@ -29,9 +29,9 @@ class Dataset_Split():
             return self.test
 
 class Split():
-    id: str
-    dataset_splits: list[Dataset_Split]
-    base_data_path: str
+    # id: str
+    # dataset_splits: list[Dataset_Split]
+    # base_data_path: str
 
     @classmethod
     def file(cls,

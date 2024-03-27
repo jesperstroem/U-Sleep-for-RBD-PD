@@ -53,9 +53,12 @@ class Random_Sampler(ISampler):
 
         assert split_type == "train"
 
-        self.probs = self.calc_probs()
+        try:
+            self.probs = self.calc_probs()
+        except:
+            self.probs = []
 
-        #self.print_report()
+        self.print_report()
             
         self.epoch_length = num_epochs
         self.num_samples = num_iterations
@@ -92,6 +95,7 @@ class Random_Sampler(ISampler):
             num_records = self.num_records[i]
             
             strat_prob = num_records/total_num_records
+
             dis_prob = 1 / total_num_datasets
             
             prob_d = 0.5 * strat_prob + 0.5*dis_prob
@@ -256,7 +260,7 @@ class Determ_sampler(ISampler):
         self.num_samples = len(self.records)
         self.get_all_channels = get_all_channels
 
-        #self.print_report()
+        self.print_report()
 
     def get_sample(self, index: int):
         sample: ISample = self.__get_sample(index)
