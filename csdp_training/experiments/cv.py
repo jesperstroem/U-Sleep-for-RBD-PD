@@ -16,95 +16,40 @@ from sklearn.model_selection import KFold
 import os
 import json
 
-def save_split_data(split_data: list[Split], exp_name):
-    cwd = os.getcwd()
+# def save_split_data(split_data: list[Split], exp_name):
+#     cwd = os.getcwd()
 
-    os.makedirs(f"{cwd}/splits/{exp_name}")
+#     os.makedirs(f"{cwd}/splits/{exp_name}")
 
-    for _, split in enumerate(split_data):
-        dic = split.get_dict()
+#     for _, split in enumerate(split_data):
+#         dic = split.get_dict()
         
-        with open(f"{cwd}/splits/{exp_name}/{split.id}.json", 'w') as fp:
-            json.dump(dic, fp)
+#         with open(f"{cwd}/splits/{exp_name}/{split.id}.json", 'w') as fp:
+#             json.dump(dic, fp)
 
-def create_global_split(dataset_filepaths: list[str]):
-    split_data = Split()
-    
-    for dataset_filepath in dataset_filepaths:
-        with h5py.File(dataset_filepath, "r") as hdf5:
-            hdf5 = hdf5["data"]
-
-            subs = list(hdf5.keys())
-
-        split_data.dataset_splits.append(Dataset_Split(dataset_filepath,
-                                                       [],
-                                                       [],
-                                                       subs))
-    
-    return split_data
-
-def create_split(dataset_filepaths: list[str],
-                 num_folds,
-                 num_validation_subjects = 1) -> [Split]:
-    all_subs = []
-    all_split_data: list[Split] = []
-
-    for file in dataset_filepaths:
-        with h5py.File(file, "r") as hdf5:
-            hdf5 = hdf5["data"]
-            subs = list(hdf5.keys())
-
-            subs = [(file, sub) for sub in subs]
-            all_subs.extend(subs)
-    
-    kf = KFold(n_splits=num_folds,
-               shuffle=True)
-    
-    for i, (train_index, test_index) in enumerate(kf.split(all_subs)):
-        split_data = Split()
-        split_data.id = i
-        
-        train_records = [all_subs[i] for i in train_index]
-
-        train_records, val_records = train_test_split(train_records,
-                                                      test_size=num_validation_subjects)
-
-        test_records = [all_subs[i] for i in test_index]
-        
-        for file in dataset_filepaths:
-            dataset_split = Dataset_Split(file)
-            dataset_split.train = [x[1] for x in list(filter(lambda x: file == x[0], train_records))]
-            dataset_split.val = [x[1] for x in list(filter(lambda x: file == x[0], val_records))]
-            dataset_split.test = [x[1] for x in list(filter(lambda x: file == x[0], test_records))]
-
-            split_data.dataset_splits.append(dataset_split)
-        
-        all_split_data.append(split_data)
-
-    return all_split_data
 
 class CV_Experiment:
-    def load_existing_split(self):
-        cwd = os.getcwd()
-        split_path = f"{cwd}/splits/{self.experiment_name}"
-        base_data_path = self.base_data_path
+    # def load_existing_split(self):
+    #     cwd = os.getcwd()
+    #     split_path = f"{cwd}/splits/{self.experiment_name}"
+    #     base_data_path = self.base_data_path
 
-        all_splits = os.listdir(split_path)
-        all_splits = [f"{split_path}/{path}" for path in all_splits]
+    #     all_splits = os.listdir(split_path)
+    #     all_splits = [f"{split_path}/{path}" for path in all_splits]
 
-        split_data = []
+    #     split_data = []
 
-        for split in all_splits:
-            s = Split(split, base_data_path)
-            split_data.append(s)
+    #     for split in all_splits:
+    #         s = Split(split, base_data_path)
+    #         split_data.append(s)
 
-        return split_data
+    #     return split_data
 
-    def experiment_exists(self):
-        cwd = os.getcwd()
-        split_path = f"{cwd}/splits/{self.experiment_name}"
-        exists = os.path.exists(split_path)
-        return exists
+    # def experiment_exists(self):
+    #     cwd = os.getcwd()
+    #     split_path = f"{cwd}/splits/{self.experiment_name}"
+    #     exists = os.path.exists(split_path)
+    #     return exists
 
     def __init__(self,
                  base_net: USleep_Lightning,
@@ -153,14 +98,15 @@ class CV_Experiment:
         self.num_folds = num_folds
         self.num_validation_subjects = num_validation_subjects
 
-        if continue_existing == True and self.experiment_exists():
-            self.split_data = self.load_existing_split()
-        else:
-            self.split_data = create_split(self.dataset_paths,
-                                           num_folds=num_folds,
-                                           num_validation_subjects=num_validation_subjects)
+        #if continue_existing == True and self.experiment_exists():
+        #    self.split_data = self.load_existing_split()
+        #else:
+        self.split_data: [Split] = self.__create_split(base_data_path,
+                                                       self.dataset_paths,
+                                                       num_folds=num_folds,
+                                                       num_validation_subjects=num_validation_subjects)
         
-            save_split_data(self.split_data, experiment_name)
+        self.__save_split_data(self.split_data, experiment_name)
 
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
@@ -169,7 +115,7 @@ class CV_Experiment:
         cwd = os.getcwd()
 
         if self.test_first == True:
-            global_split = create_global_split(self.dataset_paths)
+            global_split = self.__create_global_split(self.dataset_paths)
             wrapper = self.__create_wrapper(global_split, self.batch_size)
 
             trainer = self.__init_trainer(max_epochs=self.training_epochs,
@@ -296,3 +242,73 @@ class CV_Experiment:
                                      pipes)
     
         return wrapper
+    
+    def __create_split(self,
+                       dataset_filepaths: list[str],
+                       num_folds,
+                       num_validation_subjects = 1) -> [Split]:
+        all_subs = []
+        all_split_data: list[Split] = []
+
+        for file in dataset_filepaths:
+            with h5py.File(file, "r") as hdf5:
+                hdf5 = hdf5["data"]
+                subs = list(hdf5.keys())
+
+                subs = [(file, sub) for sub in subs]
+                all_subs.extend(subs)
+        
+        kf = KFold(n_splits=num_folds,
+                shuffle=True)
+        
+        for i, (train_index, test_index) in enumerate(kf.split(all_subs)):
+            split_data = Split()
+            split_data.base_data_path = self.base_data_path
+            split_data.id = i
+            
+            train_records = [all_subs[i] for i in train_index]
+
+            train_records, val_records = train_test_split(train_records,
+                                                          test_size=num_validation_subjects)
+
+            test_records = [all_subs[i] for i in test_index]
+            
+            for file in dataset_filepaths:
+                dataset_split = Dataset_Split(file)
+                dataset_split.train = [x[1] for x in list(filter(lambda x: file == x[0], train_records))]
+                dataset_split.val = [x[1] for x in list(filter(lambda x: file == x[0], val_records))]
+                dataset_split.test = [x[1] for x in list(filter(lambda x: file == x[0], test_records))]
+
+                split_data.dataset_splits.append(dataset_split)
+            
+            all_split_data.append(split_data)
+
+        return all_split_data
+    
+
+    def __save_split_data(self, splits: [Split], experiment_name):
+        cwd = os.getcwd()
+
+        os.makedirs(f"{cwd}/splits/{experiment_name}")
+
+        for _, split in enumerate(splits):
+            split: Split = split
+            split.dump_file(path=f"{cwd}/splits/{experiment_name}", name=split.id)
+
+    def __create_global_split(self, dataset_filepaths: list[str]):
+        split_data = Split()
+        split_data.id = "test"
+        split_data.base_data_path = self.base_data_path
+        
+        for dataset_filepath in dataset_filepaths:
+            with h5py.File(dataset_filepath, "r") as hdf5:
+                hdf5 = hdf5["data"]
+
+                subs = list(hdf5.keys())
+
+            split_data.dataset_splits.append(Dataset_Split(dataset_filepath,
+                                                        [],
+                                                        [],
+                                                        subs))
+        
+        return split_data

@@ -88,16 +88,16 @@ class Split():
                    dataset_splits=dataset_splits, 
                    base_data_path=base_hdf5_path)
     
-    def dump_file(self, name):
+    def dump_file(self, path, name):
         dic = self.get_dict()
 
-        with open(f"{name}.json", "w") as outfile: 
+        with open(f"{path}/{name}.json", "w") as outfile: 
             json.dump(dic, outfile)
 
     def __init__(self,
-                 id,
-                 dataset_splits,
-                 base_data_path):
+                 id="",
+                 dataset_splits=[],
+                 base_data_path=""):
         self.id = id
         self.dataset_splits = dataset_splits
         self.base_data_path = base_data_path
