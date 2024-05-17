@@ -13,15 +13,25 @@ from scipy import signal
 
 class FilterSettings():
     def __init__(self,
-                 order = 5,
-                 cutoffs: list[float] = [0.1, 40]):
-        assert len(cutoffs) == 2
+                 lcut,
+                 hcut,
+                 order = 2,
+                 type: str = "bandpass"):
+        assert type == "bandpass" or type == "lowpass" or type == "highpass"
 
-        self.cutoffs = cutoffs
+        if type == "bandpass":
+            self.cutoffs = [lcut, hcut]
+        elif type == "lowpass":
+            self.cutoffs = hcut
+        else:
+            self.cutoffs = lcut
+
         self.order = order
+        self.type = type
 
     cutoffs: list[float]
     order: int
+    type: str
 
 class BaseDataset(ABC):
     def __init__(
@@ -296,10 +306,10 @@ class BaseDataset(ABC):
         
     def filter_channel(self, channel, fs):
         order = self.filtersettings.order
-        l_cut = self.filtersettings.cutoffs[0]
-        h_cut = self.filtersettings.cutoffs[1]
+        cutoffs = self.filtersettings.cutoffs
+        type = self.filtersettings.type
 
-        sos = signal.butter(order, [l_cut, h_cut], btype='bandpass', fs=fs, output="sos")
+        sos = signal.butter(order, cutoffs, btype=type, fs=fs, output="sos")
         channel = signal.sosfiltfilt(sos, channel)
         return channel
 
@@ -320,16 +330,18 @@ class BaseDataset(ABC):
             
             assert len(data) == y_len*sample_rate*30, "Length of data does not match the length of labels"
             
+            data = self.resample_channel(data,
+                                         output_rate=self.output_sample_rate,
+                                         source_sample_rate=sample_rate) # TODO: Test that resampling works
+
             if self.filter:
-                data = self.filter_channel(data, sample_rate)
+                data = self.filter_channel(data, self.output_sample_rate)
 
             if self.scale_and_clip:
                 data = self.scale_channel(data)
                 data = self.clip_channel(data)
 
-            new_dict[new_key] = self.resample_channel(data,
-                                                      output_rate=self.output_sample_rate,
-                                                      source_sample_rate=sample_rate) # TODO: Test that resampling works
+            new_dict[new_key] = data
             
         return new_dict
     
@@ -391,6 +403,7 @@ class BaseDataset(ABC):
                 filter_grp.create_dataset("filter_applied", data=filtering_used)
                 filter_grp.create_dataset("order", data=filtersettings.order)
                 filter_grp.create_dataset("cutoffs", data=filtersettings.cutoffs)
+                filter_grp.create_dataset("type", data=filtersettings.type)
 
                 meta_grp.create_dataset("output_samplerate", data=output_samplerate)
                 meta_grp.create_dataset("scaled_and_clipped", data=scaled_and_clipped)

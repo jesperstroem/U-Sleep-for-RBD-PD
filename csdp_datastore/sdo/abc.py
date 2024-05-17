@@ -19,7 +19,7 @@ class ABC(SleepdataOrg):
         return "abc"
     
     def channel_mapping(self):
-        r2 = self.TTRef.Fz
+        r2 = self.TTRef.Fpz
         
         return {
             "F3": self.Mapping(self.TTRef.F3, r2),

@@ -19,7 +19,7 @@ class CHAT(SleepdataOrg):
         return "chat"
 
     def channel_mapping(self):
-        r2 = self.TTRef.Fz
+        r2 = self.TTRef.Fpz
 
         return {
             "M1": self.Mapping(self.TTRef.LPA, r2),
