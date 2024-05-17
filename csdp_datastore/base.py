@@ -82,18 +82,14 @@ class BaseDataset(ABC):
     
     class Mapping:
         def __init__(self, ref1, ref2):
-            self.ref1 = ref1
-            self.ref2 = ref2
+            self.ref1: Enum = ref1
+            self.ref2: Enum = ref2
         
         def __eq__(self, other):
             return (self.ref1, self.ref2) == (other.ref1, other.ref2)
         
         def get_mapping(self):
-            ctype = 'EOG' if self.ref1 in [BaseDataset.TTRef.EL,
-                                           BaseDataset.TTRef.ER] else 'EEG'
-            return '{t}_{r1}-{r2}'.format(t=ctype,
-                                          r1=self.ref1,
-                                          r2=self.ref2)
+            return f'{self.ref1.name}-{self.ref2.name}'
     
     class Labels(IntEnum):
         Wake = 0
