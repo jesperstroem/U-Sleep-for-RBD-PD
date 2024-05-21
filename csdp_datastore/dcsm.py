@@ -52,7 +52,8 @@ class DCSM(BaseDataset):
             record_path = f"{basepath}{path}"
             psg_path = f"{record_path}/psg.h5"
             hyp_path = f"{record_path}/hypnogram.ids"
-            paths_dict[path] = [(psg_path, hyp_path)]
+            record_name = "1" #Only one record per subject
+            paths_dict[path] = [(record_name, psg_path, hyp_path)]
         
         return paths_dict
     
