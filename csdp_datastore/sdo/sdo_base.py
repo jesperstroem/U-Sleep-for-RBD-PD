@@ -111,7 +111,9 @@ class SleepdataOrg(BaseDataset):
 
             hyp_file_path = psg_file_path.replace('/'+psg+'/', '/'+hyp+'/', 1).replace('.edf', '-profusion.xml', 1)
             splits = hyp_file_path.split("/")
-            splits = splits.split("-")
+
+            splits = splits[-1].split("-")
+
             subject_number = splits[-2]
             record_name = splits[-3]
             
