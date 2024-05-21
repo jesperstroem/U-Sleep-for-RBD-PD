@@ -13,8 +13,8 @@ from scipy import signal
 
 class FilterSettings():
     def __init__(self,
-                 lcut,
-                 hcut,
+                 lcut = None,
+                 hcut = None,
                  order = 2,
                  type: str = "bandpass"):
         assert type == "bandpass" or type == "lowpass" or type == "highpass"
