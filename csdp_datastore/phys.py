@@ -40,6 +40,7 @@ class PHYS(BaseDataset):
             
             data_path = filebase+'.hea'
             label_path = filebase+'-arousal.mat'
+            record_name = "1" #Only one record per subject
             
             exists = os.path.exists(label_path) and os.path.exists(data_path)
             
@@ -47,7 +48,7 @@ class PHYS(BaseDataset):
                 self.log_warning('The record did not exist', subject)
                 continue
             
-            paths_dict[subject] = [(data_path, label_path)]
+            paths_dict[subject] = [(record_name, data_path, label_path)]
 
         return paths_dict
     
