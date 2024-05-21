@@ -55,7 +55,7 @@ class Isruc_base(BaseDataset):
             datapath = recordpath+"subject"+path+".mat"
             labelpath = recordpath+path+'_'+"1.txt"
             
-            paths_dict[path] = [(datapath, labelpath)]
+            paths_dict[path] = [("1", datapath, labelpath)]
         
         return paths_dict
     

@@ -53,7 +53,7 @@ class Base_DOD(BaseDataset):
                 record_no = file.split(".")[0]
                 record_path = f"{dir}/{file}"
                 
-                paths_dict[record_no] = [(record_path, )]
+                paths_dict[record_no] = [("1", record_path, )]
                 
         return paths_dict
     

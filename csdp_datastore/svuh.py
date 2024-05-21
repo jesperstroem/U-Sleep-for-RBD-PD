@@ -61,7 +61,7 @@ class SVUH(BaseDataset):
                 self.log_info('Renamed file {} to .edf'.format(prepend+".rec"))
                 os.rename(prepend+".rec", prepend+".edf")
                 
-            dic[id] = [(prepend+".edf", prepend+"_stage.txt")]
+            dic[id] = [("1", prepend+".edf", prepend+"_stage.txt")]
             
         return dic
     

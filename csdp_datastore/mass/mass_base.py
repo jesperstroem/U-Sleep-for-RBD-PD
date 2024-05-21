@@ -95,7 +95,7 @@ class Mass_base(BaseDataset):
                 label_path = basepath+"annotations/"+subject_id+"_saf.txt"
                 data_path = basepath+record_name
                 
-                dic[subject_id] = [(data_path, label_path)]
+                dic[subject_id] = [("1", data_path, label_path)]
         
         return dic
     
