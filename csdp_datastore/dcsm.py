@@ -64,14 +64,18 @@ class DCSM(BaseDataset):
         x = dict()
         y = []
         
-        with File(psg_path, "r") as h5:
-            h5channels = h5.get("channels")
-            
-            for channel in self.channel_mapping().keys():
-                channel_data = h5channels[channel][:]
+        try:
+            with File(psg_path, "r") as h5:
+                h5channels = h5.get("channels")
                 
-                x[channel] = (channel_data, self.sample_rate()) # We are assuming sample rate is same across channels
-        
+                for channel in self.channel_mapping().keys():
+                    channel_data = h5channels[channel][:]
+                    
+                    x[channel] = (channel_data, self.sample_rate()) # We are assuming sample rate is same across channels
+        except Exception as msg:
+            self.log_error(msg, subject=None, record=psg_path)
+            return None
+
         with open(hyp_path) as f:
             hypnogram = f.readlines()
 
