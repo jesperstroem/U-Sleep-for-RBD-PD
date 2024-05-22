@@ -130,13 +130,15 @@ class Random_Sampler(ISampler):
             hyp = hdf5[r_subject][r_record]["hypnogram"][()]
             psg = list(hdf5[r_subject][r_record]["psg"].keys())
 
+            # try:
+            #     if self.get_all_channels == True:
+            #         eegs = self.__pick_all(psg, "EEG")
+            #         eogs = self.__pick_all(psg, "EOG")
+            #     else:
             try:
-                if self.get_all_channels == True:
-                    eegs = self.__pick_all(psg, "EEG")
-                    eogs = self.__pick_all(psg, "EOG")
-                else:
-                    eegs = self.__pick_random_channel(psg, "EEG")
-                    eogs = self.__pick_random_channel(psg, "EOG")
+                eegs, eogs = self.__pick_random_EEG_and_EOG(psg)
+                print(eegs)
+                print(eogs)
             except:
                 print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
                 return None
@@ -204,20 +206,17 @@ class Random_Sampler(ISampler):
                           x_start_index+(self.epoch_length*30*128))
         
         return sample
-
-    def __pick_random_channel(self, channel_list, type):
-        #Choose random eeg and eog
-        channels = [x for x in channel_list if x.startswith(type)]
-
-        r_channel = np.random.choice(channels, 1)
-                
-        return r_channel
     
-    def __pick_all(self, channel_list, type):
+
+    def __pick_random_EEG_and_EOG(self, channel_list):
         #Choose random eeg and eog
-        channels = [x for x in channel_list if x.startswith(type)]
-                
-        return channels
+        eog_channels = [x for x in channel_list if (x.startswith("ER-") or x.startswith("EL-"))]
+        eeg_channels = [x for x in channel_list if x not in eog_channels]
+        
+        r_eeg = np.random.choice(eeg_channels, 1)
+        r_eog = np.random.choice(eog_channels, 1)
+
+        return r_eeg, r_eog
 
     def __count_records(self):
         num_records = []
@@ -342,8 +341,8 @@ class Determ_sampler(ISampler):
         eeg_data = []
         eog_data = []
 
-        available_eeg_keys = [x for x in psg_channels if x.startswith("EEG")]
-        available_eog_keys = [x for x in psg_channels if x.startswith("EOG")]
+        available_eog_keys = [x for x in psg_channels if (x.startswith("ER-") or x.startswith("EL-"))]
+        available_eeg_keys = [x for x in psg_channels if x not in available_eog_keys]
 
         if self.get_all_channels == False:
             eeg_keys, eeg_tag = self.determine_single_key(available_eeg_keys)
