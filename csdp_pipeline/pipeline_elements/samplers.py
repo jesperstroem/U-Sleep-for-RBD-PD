@@ -210,7 +210,7 @@ class Random_Sampler(ISampler):
 
     def __pick_random_EEG_and_EOG(self, channel_list):
         #Choose random eeg and eog
-        eog_channels = [x for x in channel_list if (x.startswith("ER-") or x.startswith("EL-"))]
+        eog_channels = [x for x in channel_list if x.startswith("EOG_")]
         eeg_channels = [x for x in channel_list if x not in eog_channels]
         
         r_eeg = np.random.choice(eeg_channels, 1)

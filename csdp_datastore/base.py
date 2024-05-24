@@ -89,7 +89,8 @@ class BaseDataset(ABC):
             return (self.ref1, self.ref2) == (other.ref1, other.ref2)
         
         def get_mapping(self):
-            return f'{self.ref1.name}-{self.ref2.name}'
+            ctype = 'EOG' if self.ref1 in [BaseDataset.TTRef.EL, BaseDataset.TTRef.ER] else 'EEG'
+            return f'{ctype}_{self.ref1.name}-{self.ref2.name}'
     
     class Labels(IntEnum):
         Wake = 0
@@ -308,6 +309,11 @@ class BaseDataset(ABC):
         sos = signal.butter(order, cutoffs, btype=type, fs=fs, output="sos")
         channel = signal.sosfiltfilt(sos, channel)
         return channel
+    
+    def remove_dc(self, data):
+        mean = np.mean(data)
+        data = np.subtract(data, mean)
+        return data
 
     def __map_channels(self, dic, y_len):
         new_dict = dict()
@@ -326,6 +332,8 @@ class BaseDataset(ABC):
             
             assert len(data) == y_len*sample_rate*30, "Length of data does not match the length of labels"
             
+            data = self.remove_dc(data)
+
             data = self.resample_channel(data,
                                          output_rate=self.output_sample_rate,
                                          source_sample_rate=sample_rate) # TODO: Test that resampling works
