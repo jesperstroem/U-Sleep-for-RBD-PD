@@ -13,6 +13,12 @@ import numpy as np
 from abc import ABC, abstractmethod
 from csdp_pipeline.pipeline_elements.models import ISample, ITag, Split, Dataset_Split
 
+def filter_channels(channel_list):
+        #Choose random eeg and eog
+    eog_channels = [x for x in channel_list if x.startswith("EOG_")]
+    eeg_channels = [x for x in channel_list if x not in eog_channels]
+    return eeg_channels, eog_channels
+
 class ISampler:
     @abstractmethod
     def get_sample(self, index) -> ISample:
@@ -209,9 +215,7 @@ class Random_Sampler(ISampler):
     
 
     def __pick_random_EEG_and_EOG(self, channel_list):
-        #Choose random eeg and eog
-        eog_channels = [x for x in channel_list if x.startswith("EOG_")]
-        eeg_channels = [x for x in channel_list if x not in eog_channels]
+        eeg_channels, eog_channels = filter_channels(channel_list)
         
         r_eeg = np.random.choice(eeg_channels, 1)
         r_eog = np.random.choice(eog_channels, 1)
@@ -341,8 +345,7 @@ class Determ_sampler(ISampler):
         eeg_data = []
         eog_data = []
 
-        available_eog_keys = [x for x in psg_channels if (x.startswith("ER-") or x.startswith("EL-"))]
-        available_eeg_keys = [x for x in psg_channels if x not in available_eog_keys]
+        available_eeg_keys, available_eog_keys = filter_channels(psg_channels)
 
         if self.get_all_channels == False:
             eeg_keys, eeg_tag = self.determine_single_key(available_eeg_keys)
