@@ -72,7 +72,7 @@ class Split():
 
         for path in hdf5_paths:
             with h5py.File(path, "r") as hdf5:
-                subs = list(hdf5.keys())
+                subs = list(hdf5["data"].keys())
 
                 train, test = train_test_split(subs, test_size=1-split_percentages[0])
                 val, test = train_test_split(test, test_size=split_percentages[2]/(split_percentages[2] + split_percentages[1]))
