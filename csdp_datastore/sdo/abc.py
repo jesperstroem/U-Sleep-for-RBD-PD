@@ -33,7 +33,3 @@ class ABC(SleepdataOrg):
             "E1": self.Mapping(self.TTRef.EL, r2),
             "E2": self.Mapping(self.TTRef.ER, r2)
         }
-    
-    def calculated_channels(self):
-        list = [(self.Mapping(self.TTRef.LPA, self.TTRef.Fpz), self.Mapping(self.TTRef.RPA, self.TTRef.Fpz), self.Mapping(self.TTRef.LPA, self.TTRef.RPA))]
-        return list

@@ -316,16 +316,15 @@ class BaseDataset(ABC):
         return channel
     
     def add_calculated_channels(self, data):
-        print(data.keys())
-
         for calculation in self.calculated_channels():
             first = calculation[0].get_mapping()
             second = calculation[1].get_mapping()
             calculated_key = calculation[2].get_mapping()
 
-            data[calculated_key] = data[first] - data[second]
-
-        print(data.keys())
+            try:
+                data[calculated_key] = data[first] - data[second]
+            except:
+                pass
 
         return data
 
