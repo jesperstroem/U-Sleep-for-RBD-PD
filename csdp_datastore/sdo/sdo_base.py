@@ -20,7 +20,7 @@ class SleepdataOrg(BaseDataset):
         scale_and_clip: bool = True,
         output_sample_rate: int = 128,
         data_format: str ="hdf5",
-        logging_path: str = "./SleepDataPipeline/logs"
+        logging_path: str = "./SleepDataPipeline/logs",
     ):
         
         super().__init__(dataset_path,
@@ -42,6 +42,13 @@ class SleepdataOrg(BaseDataset):
     Baseclass for a collection of datasets downloaded from https://sleepdata.org. When downloading, you need to have the NSRR gem installed, and you need a user account and token from their website.
     
     """
+
+    def calculated_channels(self):
+        list = [(self.Mapping(self.TTRef.LPA, self.TTRef.Fpz),
+                 self.Mapping(self.TTRef.RPA, self.TTRef.Fpz), 
+                 self.Mapping(self.TTRef.LPA, self.TTRef.RPA))]
+        
+        return list
 
     def label_mapping(self): 
         return {
