@@ -13,18 +13,18 @@ from scipy import signal
 
 class FilterSettings():
     def __init__(self,
-                 lcut = None,
+                 lcut = 0.1,
                  hcut = None,
-                 order = 2,
-                 type: str = "bandpass"):
-        assert type == "bandpass" or type == "lowpass" or type == "highpass"
-
-        if type == "bandpass":
-            self.cutoffs = [lcut, hcut]
-        elif type == "lowpass":
+                 order = 2):
+        if lcut != None and hcut == None:
+            type = "highpass"
+            self.cutoffs = lcut
+        elif hcut != None and lcut == None:
+            type = "lowpass"
             self.cutoffs = hcut
         else:
-            self.cutoffs = lcut
+            type = "bandpass"
+            self.cutoffs = [lcut, hcut]
 
         self.order = order
         self.type = type
@@ -218,6 +218,11 @@ class BaseDataset(ABC):
       
     @property
     @abstractmethod
+    def calculated_channels(self) -> tuple:
+        return {}
+
+    @property
+    @abstractmethod
     def label_mapping(self) -> dict[str, Labels]:
         """_summary_
 
@@ -310,6 +315,20 @@ class BaseDataset(ABC):
         channel = signal.sosfiltfilt(sos, channel)
         return channel
     
+    def add_calculated_channels(self, data):
+        print(data.keys())
+
+        for calculation in self.calculated_channels():
+            first = calculation[0].get_mapping()
+            second = calculation[1].get_mapping()
+            calculated_key = calculation[2].get_mapping()
+
+            data[calculated_key] = data[first] - data[second]
+
+        print(data.keys())
+
+        return data
+
     def remove_dc(self, data):
         mean = np.mean(data)
         data = np.subtract(data, mean)
@@ -336,7 +355,17 @@ class BaseDataset(ABC):
 
             data = self.resample_channel(data,
                                          output_rate=self.output_sample_rate,
-                                         source_sample_rate=sample_rate) # TODO: Test that resampling works
+                                         source_sample_rate=sample_rate)
+            
+            new_dict[new_key] = data
+
+        new_dict = self.add_calculated_channels(new_dict)
+
+        for key in new_dict.keys():
+            try:
+                data = new_dict[key]
+            except KeyError:
+                continue
 
             if self.filter:
                 data = self.filter_channel(data, self.output_sample_rate)
@@ -345,7 +374,7 @@ class BaseDataset(ABC):
                 data = self.scale_channel(data)
                 data = self.clip_channel(data)
 
-            new_dict[new_key] = data
+            new_dict[key] = data
             
         return new_dict
     
