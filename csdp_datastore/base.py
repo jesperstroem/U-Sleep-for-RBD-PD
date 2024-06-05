@@ -315,14 +315,19 @@ class BaseDataset(ABC):
         channel = signal.sosfiltfilt(sos, channel)
         return channel
     
-    def add_calculated_channels(self, data):
+    def add_calculated_channels(self, data, drop_existing = False):
+        if drop_existing == True:
+            new_data = dict()
+        else:
+            new_data = data
+
         for calculation in self.calculated_channels():
             first = calculation[0].get_mapping()
             second = calculation[1].get_mapping()
             calculated_key = calculation[2].get_mapping()
 
             try:
-                data[calculated_key] = data[first] - data[second]
+                new_data[calculated_key] = data[first] - data[second]
             except:
                 pass
 
@@ -358,7 +363,7 @@ class BaseDataset(ABC):
             
             new_dict[new_key] = data
 
-        new_dict = self.add_calculated_channels(new_dict)
+        new_dict = self.add_calculated_channels(new_dict, drop_existing=True)
 
         for key in new_dict.keys():
             try:
