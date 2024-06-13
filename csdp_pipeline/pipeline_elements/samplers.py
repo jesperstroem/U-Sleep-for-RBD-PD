@@ -271,6 +271,8 @@ class Determ_sampler(ISampler):
         if any(dim == 0 for dim in sample.eog.shape):
             print("Found no EOG channel, duplicating EEG instead")
             sample.eog = sample.eeg
+            sample.tag.eog = sample.tag.eeg
+            
 
         return sample
     
