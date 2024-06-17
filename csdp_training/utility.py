@@ -134,7 +134,22 @@ def create_split_file(hdf5_basepath):
     
     return output_name
 
+def get_majority_vote_predictions(path):
+    with open(path, "rb") as f:
+        data = pickle.load(f)
+        preds = data["preds"]
+        labels = data["labels"]
 
-if __name__ == '__main__':
-    create_split_file("C:/Users/au588953/test_hdf5")
+    num_epochs = labels.shape[0]
+    num_classes = 5
+        
+    votes = torch.zeros(num_epochs, num_classes)
+
+    for item in preds.items():
+        pred = item[1]
+        votes = torch.add(votes, pred)
+
+    votes = torch.argmax(votes, axis=1)
+
+    return votes, labels
     
