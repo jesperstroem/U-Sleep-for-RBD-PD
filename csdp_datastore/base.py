@@ -11,6 +11,9 @@ from enum import Enum, auto, IntEnum
 from .logger import LoggingModule, EventSeverity
 from scipy import signal
 
+class ChannelCalculations():
+    
+
 class FilterSettings():
     def __init__(self,
                  lcut = 0.1,
@@ -45,7 +48,8 @@ class BaseDataset(ABC):
         scale_and_clip: bool = True,
         output_sample_rate: int = 128,
         data_format: str ="hdf5",
-        logging_path: str = "./SleepDataPipeline/logs"
+        logging_path: str = "./SleepDataPipeline/logs",
+        calculated_channel_config: ChannelCalculations = None
     ):
         """_summary_
 
@@ -215,11 +219,6 @@ class BaseDataset(ABC):
         
         def __str__(self):
             return self.name
-      
-    @property
-    @abstractmethod
-    def calculated_channels(self) -> tuple:
-        return {}
 
     @property
     @abstractmethod
@@ -331,7 +330,7 @@ class BaseDataset(ABC):
             except:
                 pass
 
-        return data
+        return new_data
 
     def remove_dc(self, data):
         mean = np.mean(data)
@@ -363,22 +362,22 @@ class BaseDataset(ABC):
             
             new_dict[new_key] = data
 
-        new_dict = self.add_calculated_channels(new_dict, drop_existing=True)
+        # new_dict = self.add_calculated_channels(new_dict, drop_existing=True)
 
-        for key in new_dict.keys():
-            try:
-                data = new_dict[key]
-            except KeyError:
-                continue
+        # for key in new_dict.keys():
+        #     try:
+        #         data = new_dict[key]
+        #     except KeyError:
+        #         continue
 
-            if self.filter:
-                data = self.filter_channel(data, self.output_sample_rate)
+        #     if self.filter:
+        #         data = self.filter_channel(data, self.output_sample_rate)
 
-            if self.scale_and_clip:
-                data = self.scale_channel(data)
-                data = self.clip_channel(data)
+        #     if self.scale_and_clip:
+        #         data = self.scale_channel(data)
+        #         data = self.clip_channel(data)
 
-            new_dict[key] = data
+        #     new_dict[key] = data
             
         return new_dict
     

@@ -43,13 +43,6 @@ class SleepdataOrg(BaseDataset):
     
     """
 
-    def calculated_channels(self):
-        list = [(self.Mapping(self.TTRef.LPA, self.TTRef.Fpz),
-                 self.Mapping(self.TTRef.RPA, self.TTRef.Fpz), 
-                 self.Mapping(self.TTRef.LPA, self.TTRef.RPA))]
-        
-        return list
-
     def label_mapping(self): 
         return {
             '0': self.Labels.Wake,
