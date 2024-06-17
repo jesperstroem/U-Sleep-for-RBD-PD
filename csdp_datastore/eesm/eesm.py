@@ -5,6 +5,7 @@ import pandas as pd
 import mne
 from scipy.interpolate import interp1d
 import numpy as np
+from ..models import Mapping, Labels, EarEEGRef
 
 class EESM_Cleaned(BaseDataset):
     """
@@ -13,14 +14,14 @@ class EESM_Cleaned(BaseDataset):
     
     def label_mapping(self):
         return {
-            1: self.Labels.Wake,
-            2: self.Labels.REM,
-            3: self.Labels.N1,
-            4: self.Labels.N2,
-            5: self.Labels.N3,
-            6: self.Labels.UNKNOWN,
-            7: self.Labels.UNKNOWN,
-            8: self.Labels.UNKNOWN
+            1: Labels.Wake,
+            2: Labels.REM,
+            3: Labels.N1,
+            4: Labels.N2,
+            5: Labels.N3,
+            6: Labels.UNKNOWN,
+            7: Labels.UNKNOWN,
+            8: Labels.UNKNOWN
         }
         
     def dataset_name(self):
@@ -28,18 +29,18 @@ class EESM_Cleaned(BaseDataset):
 
     def channel_mapping(self):
         return {
-            "ELA": self.Mapping(self.EarEEGRef.ELA, self.EarEEGRef.REF),
-            "ELB": self.Mapping(self.EarEEGRef.ELB, self.EarEEGRef.REF),
-            "ELC": self.Mapping(self.EarEEGRef.ELC, self.EarEEGRef.REF),
-            "ELT": self.Mapping(self.EarEEGRef.ELT, self.EarEEGRef.REF),
-            "ELE": self.Mapping(self.EarEEGRef.ELE, self.EarEEGRef.REF),
-            "ELI": self.Mapping(self.EarEEGRef.ELI, self.EarEEGRef.REF),
-            "ERA": self.Mapping(self.EarEEGRef.ERA, self.EarEEGRef.REF),
-            "ERB": self.Mapping(self.EarEEGRef.ERB, self.EarEEGRef.REF),
-            "ERC": self.Mapping(self.EarEEGRef.ERC, self.EarEEGRef.REF),
-            "ERT": self.Mapping(self.EarEEGRef.ERT, self.EarEEGRef.REF),
-            "ERE": self.Mapping(self.EarEEGRef.ERE, self.EarEEGRef.REF),
-            "ERI": self.Mapping(self.EarEEGRef.ERI, self.EarEEGRef.REF),
+            "ELA": Mapping(EarEEGRef.ELA, EarEEGRef.REF),
+            "ELB": Mapping(EarEEGRef.ELB, EarEEGRef.REF),
+            "ELC": Mapping(EarEEGRef.ELC, EarEEGRef.REF),
+            "ELT": Mapping(EarEEGRef.ELT, EarEEGRef.REF),
+            "ELE": Mapping(EarEEGRef.ELE, EarEEGRef.REF),
+            "ELI": Mapping(EarEEGRef.ELI, EarEEGRef.REF),
+            "ERA": Mapping(EarEEGRef.ERA, EarEEGRef.REF),
+            "ERB": Mapping(EarEEGRef.ERB, EarEEGRef.REF),
+            "ERC": Mapping(EarEEGRef.ERC, EarEEGRef.REF),
+            "ERT": Mapping(EarEEGRef.ERT, EarEEGRef.REF),
+            "ERE": Mapping(EarEEGRef.ERE, EarEEGRef.REF),
+            "ERI": Mapping(EarEEGRef.ERI, EarEEGRef.REF),
         }    
 
     def list_records(self, basepath):

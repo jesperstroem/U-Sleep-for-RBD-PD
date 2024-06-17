@@ -1,4 +1,5 @@
 from .sdo_base import SleepdataOrg
+from ..models import TTRef, Mapping
 
 # Does not work at the moment because of different samplerates across records.
 
@@ -8,11 +9,11 @@ class CFS(SleepdataOrg):
 
     def channel_mapping(self):
         return {
-            "C3": self.Mapping(self.TTRef.C3, self.TTRef.Fpz),
-            "C4": self.Mapping(self.TTRef.C4, self.TTRef.Fpz),
-            "M1": self.Mapping(self.TTRef.LPA, self.TTRef.Fpz),
-            "M2": self.Mapping(self.TTRef.RPA, self.TTRef.Fpz),
-            "LOC": self.Mapping(self.TTRef.EL, self.TTRef.Fpz),
-            "ROC": self.Mapping(self.TTRef.ER, self.TTRef.Fpz)
+            "C3": Mapping(TTRef.C3, TTRef.Fpz),
+            "C4": Mapping(TTRef.C4, TTRef.Fpz),
+            "M1": Mapping(TTRef.LPA, TTRef.Fpz),
+            "M2": Mapping(TTRef.RPA, TTRef.Fpz),
+            "LOC": Mapping(TTRef.EL, TTRef.Fpz),
+            "ROC": Mapping(TTRef.ER, TTRef.Fpz)
         }
         

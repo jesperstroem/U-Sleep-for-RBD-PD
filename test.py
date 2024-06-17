@@ -1,11 +1,22 @@
-import mne
+import h5py
 from csdp_datastore import ABC
+from csdp_datastore.models import ChannelCalculations, Rereference, Mapping, TTRef
 
 path = "C:/Users/au588953/abc"
 
-d = ABC(path, path, max_num_subjects=1, filter=True)
+reref = Rereference(first=Mapping(TTRef.LPA, TTRef.Fpz),
+                    second=Mapping(TTRef.RPA, TTRef.Fpz),
+                    result=Mapping(TTRef.LPA, TTRef.RPA))
+
+config = ChannelCalculations(rereferences=[reref],
+                             drop_existing=False)
+
+d = ABC(path, path, max_num_subjects=1, filter=True, calculated_channel_config=config)
 
 d.port_data()
+
+# f = h5py.File("C:/Users/au588953/abc/abc.hdf5", "r")
+# print(f["data"]["900001"]["baseline"]["psg"].keys())
 
 # data = mne.io.read_raw_edf("C:/Users/au588953/abc/polysomnography/edfs/baseline/abc-baseline-900001.edf", preload=True, verbose=False)
 

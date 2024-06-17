@@ -1,9 +1,6 @@
 import os
-from h5py import File
-import scipy.io
-import numpy as np
-import pandas as pd
 import mne
+from .models import TTRef, Mapping, Labels
 
 from .base import BaseDataset
 
@@ -23,24 +20,24 @@ class SVUH(BaseDataset):
     
     def label_mapping(self):
         return {
-            "0": self.Labels.Wake,
-            "1": self.Labels.REM,
-            "2": self.Labels.N1,
-            "3": self.Labels.N2,
-            "4": self.Labels.N3,
-            "5": self.Labels.N3, # Stage 4 in SVUH is same as N3
-            "6": self.Labels.UNKNOWN,
-            "7": self.Labels.UNKNOWN,
-            "8": self.Labels.UNKNOWN
+            "0": Labels.Wake,
+            "1": Labels.REM,
+            "2": Labels.N1,
+            "3": Labels.N2,
+            "4": Labels.N3,
+            "5": Labels.N3, # Stage 4 in SVUH is same as N3
+            "6": Labels.UNKNOWN,
+            "7": Labels.UNKNOWN,
+            "8": Labels.UNKNOWN
         }
     
     
     def channel_mapping(self):
         return {
-            "Lefteye": self.Mapping(self.TTRef.EL, self.TTRef.RPA),
-            "RightEye": self.Mapping(self.TTRef.ER, self.TTRef.LPA),
-            "C3A2": self.Mapping(self.TTRef.C3, self.TTRef.RPA),
-            "C4A1": self.Mapping(self.TTRef.C4, self.TTRef.LPA)
+            "Lefteye": Mapping(TTRef.EL, TTRef.RPA),
+            "RightEye": Mapping(TTRef.ER, TTRef.LPA),
+            "C3A2": Mapping(TTRef.C3, TTRef.RPA),
+            "C4A1": Mapping(TTRef.C4, TTRef.LPA)
         }
     
     

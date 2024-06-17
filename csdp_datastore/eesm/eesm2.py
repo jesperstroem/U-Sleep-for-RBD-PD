@@ -4,18 +4,19 @@ import numpy as np
 from csdp_datastore import EESM_Cleaned
 import os
 import h5py
+from ..models import Mapping, EarEEGRef, Labels
 
 #""
 
 class EESM2(EESM_Cleaned):
     def label_mapping(self):
         return {
-            "Wake": self.Labels.Wake,
-            "REM": self.Labels.REM,
-            "N1": self.Labels.N1,
-            "N2": self.Labels.N2,
-            "N3": self.Labels.N3,
-            "Artefact": self.Labels.UNKNOWN,
+            "Wake": Labels.Wake,
+            "REM": Labels.REM,
+            "N1": Labels.N1,
+            "N2": Labels.N2,
+            "N3": Labels.N3,
+            "Artefact": Labels.UNKNOWN,
         }
         
     def dataset_name(self):
@@ -23,10 +24,10 @@ class EESM2(EESM_Cleaned):
 
     def channel_mapping(self):
         return {
-            "EL0": self.Mapping(self.EarEEGRef.ELA, self.EarEEGRef.REF),
-            "EL1": self.Mapping(self.EarEEGRef.ELB, self.EarEEGRef.REF),
-            "ER0": self.Mapping(self.EarEEGRef.ERA, self.EarEEGRef.REF),
-            "ER1": self.Mapping(self.EarEEGRef.ERB, self.EarEEGRef.REF),
+            "EL0": Mapping(EarEEGRef.ELA, EarEEGRef.REF),
+            "EL1": Mapping(EarEEGRef.ELB, EarEEGRef.REF),
+            "ER0": Mapping(EarEEGRef.ERA, EarEEGRef.REF),
+            "ER1": Mapping(EarEEGRef.ERB, EarEEGRef.REF),
         }    
 
     def list_records(self, basepath):

@@ -1,6 +1,7 @@
 import os
 import mne
 import re
+from ..models import TTRef, Mapping, Labels
 
 from abc import abstractmethod
 
@@ -20,63 +21,63 @@ class Mass_base(BaseDataset):
     
     def label_mapping(self):
         return {
-            "Sleep stage ?": self.Labels.UNKNOWN,
-            "Sleep stage 1": self.Labels.N1,
-            "Sleep stage 2": self.Labels.N2,
-            "Sleep stage 3": self.Labels.N3,
-            "Sleep stage W": self.Labels.Wake,
-            "Sleep stage R": self.Labels.REM
+            "Sleep stage ?": Labels.UNKNOWN,
+            "Sleep stage 1": Labels.N1,
+            "Sleep stage 2": Labels.N2,
+            "Sleep stage 3": Labels.N3,
+            "Sleep stage W": Labels.Wake,
+            "Sleep stage R": Labels.REM
         }
 
     def channel_mapping(self):
-        ref = self.TTRef.CLE
+        ref = TTRef.CLE
         
         dic = {
-            "EEG T4-CLE": self.Mapping(self.TTRef.T8, ref),
-            "EEG P3-CLE": self.Mapping(self.TTRef.P3, ref),
-            "EEG F4-CLE": self.Mapping(self.TTRef.F4, ref),
-            "EEG T6-CLE": self.Mapping(self.TTRef.P8, ref),
-            "EEG F8-CLE": self.Mapping(self.TTRef.F8, ref),
-            "EEG Cz-CLE": self.Mapping(self.TTRef.Cz, ref),
-            "EEG T5-CLE": self.Mapping(self.TTRef.P7, ref),
-            "EEG F7-CLE": self.Mapping(self.TTRef.F7, ref),
-            "EEG T3-CLE": self.Mapping(self.TTRef.T7, ref),
-            "EEG Fz-CLE": self.Mapping(self.TTRef.Fz, ref),
-            "EEG C4-CLE": self.Mapping(self.TTRef.C4, ref),
-            "EEG O1-CLE": self.Mapping(self.TTRef.O1, ref),
-            "EEG O2-CLE": self.Mapping(self.TTRef.O2, ref),
-            "EEG C3-CLE": self.Mapping(self.TTRef.C3, ref),
-            "EEG F3-CLE": self.Mapping(self.TTRef.F3, ref),
-            "EEG P4-CLE": self.Mapping(self.TTRef.P4, ref),
-            "EEG A2-CLE": self.Mapping(self.TTRef.RPA, ref),
-            "EEG Pz-CLE": self.Mapping(self.TTRef.Pz, ref),
+            "EEG T4-CLE": Mapping(TTRef.T8, ref),
+            "EEG P3-CLE": Mapping(TTRef.P3, ref),
+            "EEG F4-CLE": Mapping(TTRef.F4, ref),
+            "EEG T6-CLE": Mapping(TTRef.P8, ref),
+            "EEG F8-CLE": Mapping(TTRef.F8, ref),
+            "EEG Cz-CLE": Mapping(TTRef.Cz, ref),
+            "EEG T5-CLE": Mapping(TTRef.P7, ref),
+            "EEG F7-CLE": Mapping(TTRef.F7, ref),
+            "EEG T3-CLE": Mapping(TTRef.T7, ref),
+            "EEG Fz-CLE": Mapping(TTRef.Fz, ref),
+            "EEG C4-CLE": Mapping(TTRef.C4, ref),
+            "EEG O1-CLE": Mapping(TTRef.O1, ref),
+            "EEG O2-CLE": Mapping(TTRef.O2, ref),
+            "EEG C3-CLE": Mapping(TTRef.C3, ref),
+            "EEG F3-CLE": Mapping(TTRef.F3, ref),
+            "EEG P4-CLE": Mapping(TTRef.P4, ref),
+            "EEG A2-CLE": Mapping(TTRef.RPA, ref),
+            "EEG Pz-CLE": Mapping(TTRef.Pz, ref),
             
             # EOGS assumed to be cross ear as in other datasets
-            "EOG Right Horiz": self.Mapping(self.TTRef.ER, self.TTRef.LPA),
-            "EOG Left Horiz": self.Mapping(self.TTRef.EL, self.TTRef.RPA)
+            "EOG Right Horiz": Mapping(TTRef.ER, TTRef.LPA),
+            "EOG Left Horiz": Mapping(TTRef.EL, TTRef.RPA)
         }
         
         # For some reason, some of the records use another ref - LER
-        ref = self.TTRef.LER
+        ref = TTRef.LER
         
         appends = {
-            "EEG T4-LER": self.Mapping(self.TTRef.T8, ref),
-            "EEG P3-LER": self.Mapping(self.TTRef.P3, ref),
-            "EEG F4-LER": self.Mapping(self.TTRef.F4, ref),
-            "EEG T6-LER": self.Mapping(self.TTRef.P8, ref),
-            "EEG F8-LER": self.Mapping(self.TTRef.F8, ref),
-            "EEG Cz-LER": self.Mapping(self.TTRef.Cz, ref),
-            "EEG T5-LER": self.Mapping(self.TTRef.P7, ref),
-            "EEG F7-LER": self.Mapping(self.TTRef.F7, ref),
-            "EEG T3-LER": self.Mapping(self.TTRef.T7, ref),
-            "EEG Fz-LER": self.Mapping(self.TTRef.Fz, ref),
-            "EEG C4-LER": self.Mapping(self.TTRef.C4, ref),
-            "EEG O1-LER": self.Mapping(self.TTRef.O1, ref),
-            "EEG O2-LER": self.Mapping(self.TTRef.O2, ref),
-            "EEG C3-LER": self.Mapping(self.TTRef.C3, ref),
-            "EEG F3-LER": self.Mapping(self.TTRef.F3, ref),
-            "EEG P4-LER": self.Mapping(self.TTRef.P4, ref),
-            "EEG Pz-LER": self.Mapping(self.TTRef.Pz, ref)
+            "EEG T4-LER": Mapping(TTRef.T8, ref),
+            "EEG P3-LER": Mapping(TTRef.P3, ref),
+            "EEG F4-LER": Mapping(TTRef.F4, ref),
+            "EEG T6-LER": Mapping(TTRef.P8, ref),
+            "EEG F8-LER": Mapping(TTRef.F8, ref),
+            "EEG Cz-LER": Mapping(TTRef.Cz, ref),
+            "EEG T5-LER": Mapping(TTRef.P7, ref),
+            "EEG F7-LER": Mapping(TTRef.F7, ref),
+            "EEG T3-LER": Mapping(TTRef.T7, ref),
+            "EEG Fz-LER": Mapping(TTRef.Fz, ref),
+            "EEG C4-LER": Mapping(TTRef.C4, ref),
+            "EEG O1-LER": Mapping(TTRef.O1, ref),
+            "EEG O2-LER": Mapping(TTRef.O2, ref),
+            "EEG C3-LER": Mapping(TTRef.C3, ref),
+            "EEG F3-LER": Mapping(TTRef.F3, ref),
+            "EEG P4-LER": Mapping(TTRef.P4, ref),
+            "EEG Pz-LER": Mapping(TTRef.Pz, ref)
         }
         
         dic.update(appends)

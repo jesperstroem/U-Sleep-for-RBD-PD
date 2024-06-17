@@ -1,7 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
-
 from .sdo_base import SleepdataOrg
+from ..models import TTRef, Mapping
 
 class ABC(SleepdataOrg):
     """
@@ -19,17 +19,17 @@ class ABC(SleepdataOrg):
         return "abc"
     
     def channel_mapping(self):
-        r2 = self.TTRef.Fpz
+        r2 = TTRef.Fpz
         
         return {
-            "F3": self.Mapping(self.TTRef.F3, r2),
-            "F4": self.Mapping(self.TTRef.F4, r2),
-            "C3": self.Mapping(self.TTRef.C3, r2),
-            "C4": self.Mapping(self.TTRef.C4, r2),
-            "O1": self.Mapping(self.TTRef.O1, r2),
-            "O2": self.Mapping(self.TTRef.O2, r2),
-            "M1": self.Mapping(self.TTRef.LPA, r2),
-            "M2": self.Mapping(self.TTRef.RPA, r2),
-            "E1": self.Mapping(self.TTRef.EL, r2),
-            "E2": self.Mapping(self.TTRef.ER, r2)
+            "F3": Mapping(TTRef.F3, r2),
+            "F4": Mapping(TTRef.F4, r2),
+            "C3": Mapping(TTRef.C3, r2),
+            "C4": Mapping(TTRef.C4, r2),
+            "O1": Mapping(TTRef.O1, r2),
+            "O2": Mapping(TTRef.O2, r2),
+            "M1": Mapping(TTRef.LPA, r2),
+            "M2": Mapping(TTRef.RPA, r2),
+            "E1": Mapping(TTRef.EL, r2),
+            "E2": Mapping(TTRef.ER, r2)
         }

@@ -1,8 +1,7 @@
 import os
 from h5py import File
-
 from .base import BaseDataset
-
+from .models import TTRef, Mapping, Labels
 
 class DCSM(BaseDataset):
     """
@@ -14,11 +13,11 @@ class DCSM(BaseDataset):
     """
     def label_mapping(self):
         return {
-            "W": self.Labels.Wake,
-            "N1": self.Labels.N1,
-            "N2": self.Labels.N2,
-            "N3": self.Labels.N3,
-            "REM": self.Labels.REM
+            "W": Labels.Wake,
+            "N1": Labels.N1,
+            "N2": Labels.N2,
+            "N3": Labels.N3,
+            "REM": Labels.REM
         }
   
 
@@ -32,14 +31,14 @@ class DCSM(BaseDataset):
     
     def channel_mapping(self):
         return {
-            "E1-M2": self.Mapping(self.TTRef.EL, self.TTRef.RPA),
-            "E2-M2": self.Mapping(self.TTRef.ER, self.TTRef.RPA),
-            "C3-M2": self.Mapping(self.TTRef.C3, self.TTRef.RPA),
-            "C4-M1": self.Mapping(self.TTRef.C4, self.TTRef.LPA),
-            "F3-M2": self.Mapping(self.TTRef.F3, self.TTRef.RPA),
-            "F4-M1": self.Mapping(self.TTRef.F4, self.TTRef.LPA),
-            "O1-M2": self.Mapping(self.TTRef.O1, self.TTRef.RPA),
-            "O2-M1": self.Mapping(self.TTRef.O2, self.TTRef.LPA)
+            "E1-M2": Mapping(TTRef.EL, TTRef.RPA),
+            "E2-M2": Mapping(TTRef.ER, TTRef.RPA),
+            "C3-M2": Mapping(TTRef.C3, TTRef.RPA),
+            "C4-M1": Mapping(TTRef.C4, TTRef.LPA),
+            "F3-M2": Mapping(TTRef.F3, TTRef.RPA),
+            "F4-M1": Mapping(TTRef.F4, TTRef.LPA),
+            "O1-M2": Mapping(TTRef.O1, TTRef.RPA),
+            "O2-M1": Mapping(TTRef.O2, TTRef.LPA)
         }
     
     

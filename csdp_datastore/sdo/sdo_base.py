@@ -3,8 +3,8 @@ import mne
 import xml.etree.ElementTree as ET
 from abc import abstractmethod
 import subprocess
-
 from csdp_datastore.base import BaseDataset, FilterSettings
+from ..models import ChannelCalculations, Labels
 
 class SleepdataOrg(BaseDataset):
 
@@ -21,6 +21,7 @@ class SleepdataOrg(BaseDataset):
         output_sample_rate: int = 128,
         data_format: str ="hdf5",
         logging_path: str = "./SleepDataPipeline/logs",
+        calculated_channel_config: ChannelCalculations = None
     ):
         
         super().__init__(dataset_path,
@@ -32,7 +33,8 @@ class SleepdataOrg(BaseDataset):
                          scale_and_clip,
                          output_sample_rate,
                          data_format,
-                         logging_path)
+                         logging_path,
+                         calculated_channel_config=calculated_channel_config)
         
         self.download_token = download_token
 
@@ -45,14 +47,14 @@ class SleepdataOrg(BaseDataset):
 
     def label_mapping(self): 
         return {
-            '0': self.Labels.Wake,
-            '1': self.Labels.N1,
-            '2': self.Labels.N2,
-            '3': self.Labels.N3,
-            '4': self.Labels.N3,
-            '5': self.Labels.REM,
-            '6': self.Labels.UNKNOWN,
-            '9': self.Labels.UNKNOWN
+            '0': Labels.Wake,
+            '1': Labels.N1,
+            '2': Labels.N2,
+            '3': Labels.N3,
+            '4': Labels.N3,
+            '5': Labels.REM,
+            '6': Labels.UNKNOWN,
+            '9': Labels.UNKNOWN
         }
     
     @property
