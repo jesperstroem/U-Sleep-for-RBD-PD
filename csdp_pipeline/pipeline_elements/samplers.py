@@ -51,7 +51,7 @@ class Random_Sampler(ISampler):
                  split_type: str, 
                  num_epochs: int, 
                  num_iterations: int,
-                 pick_function: function = None):
+                 pick_function = None):
         if pick_function == None:
             self.pick_function == self.__pick_random_EEG_and_EOG
         else:
@@ -144,6 +144,10 @@ class Random_Sampler(ISampler):
                 eegs, eogs = self.pick_function(psg)
             except:
                 print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
+                return None
+            
+            if len(eegs) == 0 and len(eogs) == 0:
+                print(f"No EEG or EOG available. Available channels: {psg} from {r_subject}, {r_record}")
                 return None
 
             # Choose random index of a random label
