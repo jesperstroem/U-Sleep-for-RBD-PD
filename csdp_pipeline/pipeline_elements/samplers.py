@@ -51,10 +51,14 @@ class Random_Sampler(ISampler):
                  split_type: str, 
                  num_epochs: int, 
                  num_iterations: int,
-                 get_all_channels: bool = False):
+                 pick_function: function = None):
+        if pick_function == None:
+            self.pick_function == self.__pick_random_EEG_and_EOG
+        else:
+            self.pick_function = pick_function
+
         self.split_type = split_type
         self.split_data = split_data
-        self.get_all_channels = get_all_channels
         self.num_records = self.__count_records()
 
         assert split_type == "train"
@@ -136,15 +140,8 @@ class Random_Sampler(ISampler):
             hyp = hdf5[r_subject][r_record]["hypnogram"][()]
             psg = list(hdf5[r_subject][r_record]["psg"].keys())
 
-            # try:
-            #     if self.get_all_channels == True:
-            #         eegs = self.__pick_all(psg, "EEG")
-            #         eogs = self.__pick_all(psg, "EOG")
-            #     else:
             try:
-                eegs, eogs = self.__pick_random_EEG_and_EOG(psg)
-                print(eegs)
-                print(eogs)
+                eegs, eogs = self.pick_function(psg)
             except:
                 print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
                 return None
@@ -212,7 +209,6 @@ class Random_Sampler(ISampler):
                           x_start_index+(self.epoch_length*30*128))
         
         return sample
-    
 
     def __pick_random_EEG_and_EOG(self, channel_list):
         eeg_channels, eog_channels = filter_channels(channel_list)
