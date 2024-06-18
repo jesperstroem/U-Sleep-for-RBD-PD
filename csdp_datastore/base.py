@@ -175,6 +175,9 @@ class BaseDataset(ABC):
             except:
                 pass
 
+        if len(new_data.keys()) == 0:
+            raise Exception("No calculated keys")
+        
         return new_data
 
     def remove_dc(self, data):
@@ -207,7 +210,10 @@ class BaseDataset(ABC):
             
             new_dict[new_key] = data
 
-        new_dict = self.add_calculated_channels(new_dict)
+        try:
+            new_dict = self.add_calculated_channels(new_dict)
+        except:
+            raise Exception("Could not calculate new channels")
 
         for key in new_dict.keys():
             try:
@@ -392,7 +398,11 @@ class BaseDataset(ABC):
                 
                 x, y = psg
                 
-                x = self.__map_channels(x, len(y))
+                try:
+                    x = self.__map_channels(x, len(y))
+                except:
+                    continue 
+                
                 y = self.__map_labels(y)
                 
                 self.write_function(
