@@ -401,8 +401,9 @@ class BaseDataset(ABC):
                 try:
                     x = self.__map_channels(x, len(y))
                 except:
+                    self.log_error("Could not map data", subject=subject_number, record=record_name)
                     continue 
-                
+
                 y = self.__map_labels(y)
                 
                 self.write_function(
