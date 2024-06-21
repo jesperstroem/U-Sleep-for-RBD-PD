@@ -16,40 +16,7 @@ from sklearn.model_selection import KFold
 import os
 import json
 
-# def save_split_data(split_data: list[Split], exp_name):
-#     cwd = os.getcwd()
-
-#     os.makedirs(f"{cwd}/splits/{exp_name}")
-
-#     for _, split in enumerate(split_data):
-#         dic = split.get_dict()
-        
-#         with open(f"{cwd}/splits/{exp_name}/{split.id}.json", 'w') as fp:
-#             json.dump(dic, fp)
-
-
 class CV_Experiment:
-    # def load_existing_split(self):
-    #     cwd = os.getcwd()
-    #     split_path = f"{cwd}/splits/{self.experiment_name}"
-    #     base_data_path = self.base_data_path
-
-    #     all_splits = os.listdir(split_path)
-    #     all_splits = [f"{split_path}/{path}" for path in all_splits]
-
-    #     split_data = []
-
-    #     for split in all_splits:
-    #         s = Split(split, base_data_path)
-    #         split_data.append(s)
-
-    #     return split_data
-
-    # def experiment_exists(self):
-    #     cwd = os.getcwd()
-    #     split_path = f"{cwd}/splits/{self.experiment_name}"
-    #     exists = os.path.exists(split_path)
-    #     return exists
 
     def __init__(self,
                  base_net: USleep_Lightning,
@@ -128,12 +95,6 @@ class CV_Experiment:
 
         for _, split in enumerate(self.split_data):
             split_name = f"Split_{split.id}"
-            
-            #results_path = f"{cwd}/results/{self.experiment_name}/split_{split_name}"
-
-            # if self.continue_existing == True and os.path.exists(results_path) == True:
-            #     print(f"Skipping split {split.id} since results are already present")
-            #     continue
 
             wrapper = self.__create_wrapper(split, self.batch_size)
 
@@ -219,7 +180,6 @@ class CV_Experiment:
         train_sampler = Random_Sampler(split,
                                     split_type="train",
                                     num_epochs=35,
-                                    get_all_channels=self.pick_all_channels[0],
                                     num_iterations=batch_size*self.batches_per_epoch)
         
         val_sampler = Determ_sampler(split,
