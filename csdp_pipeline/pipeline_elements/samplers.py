@@ -53,7 +53,7 @@ class Random_Sampler(ISampler):
                  num_iterations: int,
                  pick_function = None):
         if pick_function == None:
-            self.pick_function == self.__pick_random_EEG_and_EOG
+            self.pick_function = self.__pick_random_EEG_and_EOG
         else:
             self.pick_function = pick_function
 
