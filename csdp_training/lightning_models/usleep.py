@@ -42,36 +42,38 @@ class USleep_Lightning(Base_Lightning):
         self.include_eog = include_eog
         self.num_channels = num_channels
 
-    def channels_prediction_EEGONLY(self, x_eegs):
+    def channels_prediction_EEGONLY(self, x_eegs, ybatch, tags):
         eegshape = x_eegs.shape
         
         num_eegs = eegshape[1]
-        
-        signal_len = eegshape[2]
-        num_epochs = int(signal_len / 128 / 30)
-        
-        votes = torch.zeros(num_epochs, 5) # fordi vi summerer løbende
-        
+
+        all_preds = {}
+
         for i in range(num_eegs):
             x_eeg = x_eegs[:,i,...]
 
             x_eeg = torch.unsqueeze(x_eeg, 1)
+            x_eog = torch.unsqueeze(x_eog, 1)
             
-            pred = self(x_eeg)
+            x_temp = torch.cat([x_eeg, x_eog], dim=1)
+            
+            pred = self(x_temp)
             pred = torch.nn.functional.softmax(pred, dim=1)
             pred = torch.squeeze(pred)
             pred = pred.swapaxes(0,1)
-            pred = pred.cpu()
-            
-            votes = torch.add(votes, pred)
+            pred = pred.to("cpu")
 
-        votes = torch.argmax(votes, axis=1)
+            eeg_tag = tags["eeg"][i]
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        votes = votes.to(device)
-        
-        return votes
+            all_preds[f"{eeg_tag}"] = pred
+                
+        log_test_step("results",
+                      f"{self.output_folder_prefix}", 
+                      dataset=tags["dataset"],
+                      subject=tags["subject"],
+                      record=tags["record"],
+                      preds=all_preds,
+                      labels=ybatch.to("cpu"))
     
     def channels_prediction(self, x_eegs, x_eogs, ybatch, tags):
         eegshape = x_eegs.shape
