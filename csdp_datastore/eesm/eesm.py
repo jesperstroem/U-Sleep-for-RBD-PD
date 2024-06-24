@@ -62,7 +62,7 @@ class EESM_Cleaned(BaseDataset):
                 label_path = f"{base_label_path}/{s_path}_{r_path}_task-sleep_acq-scoring1_events.tsv"
                 
                 if os.path.exists(data_path) and os.path.exists(label_path):
-                    records.append((data_path, label_path))
+                    records.append((r_path, data_path, label_path))
                 
             paths_dict[subject_id] = records
 
