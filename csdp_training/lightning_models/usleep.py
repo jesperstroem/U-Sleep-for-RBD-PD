@@ -200,4 +200,4 @@ class USleep_Lightning(Base_Lightning):
             assert len(x_eog.shape) == 3
             self.channels_prediction(x_eeg, x_eog, ybatch, tags)
         else:
-            channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg)
+            channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg, ybatch, tags)
