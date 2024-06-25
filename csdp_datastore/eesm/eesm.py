@@ -102,7 +102,7 @@ class EESM_Cleaned(BaseDataset):
 
         data, nEpochs_min = self.slice_and_interpolate_channel(deriv, sample_rate, len(y))
 
-        x["Left-Right"] = data
+        x["Left-Right"] = (data, sample_rate)
 
         y=y[0:nEpochs_min]
         
