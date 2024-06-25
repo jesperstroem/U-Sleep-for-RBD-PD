@@ -16,6 +16,9 @@ class EarEEGRef(Enum):
     ERE = auto()
     ERI = auto()
     
+    EL_AVG = auto()
+    ER_AVG = auto()
+
     #Common ref
     REF = auto()
 
