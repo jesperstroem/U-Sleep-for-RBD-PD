@@ -115,18 +115,7 @@ class Base_Lightning(pl.LightningModule):
         all_acc = self.validation_step_acc
         all_kap = self.validation_step_kap    
         all_f1 = self.validation_step_f1
-        #all_preds = self.validation_preds
-        #all_labels = self.validation_labels
 
-        #all_preds = torch.cat(all_preds)
-        #all_labels = torch.cat(all_labels)
-
-        #all_preds, all_labels = filter_unknowns(all_preds, all_labels)
-
-        #all_preds = np.array(all_preds)
-        #all_labels = np.array(all_labels)
-
-        # cm = confusion_matrix(all_labels, all_preds)
 
         mean_loss = torch.mean(torch.stack(all_losses, dim=0))
         mean_acc = torch.mean(torch.stack(all_acc, dim=0))
@@ -148,12 +137,6 @@ class Base_Lightning(pl.LightningModule):
         self.log('val_f1_c2', mean_f1c2, batch_size=batch_size, rank_zero_only=True)
         self.log('val_f1_c3', mean_f1c3, batch_size=batch_size, rank_zero_only=True)
         self.log('val_f1_c4', mean_f1c4, batch_size=batch_size, rank_zero_only=True)
-
-        # cm = plot_confusionmatrix(cm, "")
-        # try:
-        #     self.logger.experiment["val_cm"].append(stringify_unsupported(cm))
-        # except:
-        #     print("Could not upload confusion matrix, possibly because the chosen logging framework does not support it")
 
         self.validation_step_loss.clear()
         self.validation_step_acc.clear()
