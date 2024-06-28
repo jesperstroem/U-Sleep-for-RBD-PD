@@ -22,11 +22,7 @@ setup(
         "csdp_datastore.mass",
         "csdp_datastore.sdo",
         "csdp_datastore.sedf",
-        "csdp_datastore.eesm",
-        "ml_architectures",
-        "ml_architectures.common",
-        "ml_architectures.lseqsleepnet",
-        "ml_architectures.usleep"
+        "csdp_datastore.eesm"
     ],
     install_requires=["numpy~=1.26.2", 
                       "scipy~=1.11.4", 
