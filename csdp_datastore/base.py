@@ -143,7 +143,7 @@ class BaseDataset(ABC):
                 name, psg, hyp = r
 
                 for file_path in [psg, hyp]:
-                    assert os.path.exists(file_path), f"Datapath: {file_path}"
+                    assert os.path.exists(file_path), f"Datapath: {file_path} was not found"
         
     def filter_channel(self, channel, fs):
         order = self.filtersettings.order
@@ -384,6 +384,7 @@ class BaseDataset(ABC):
 
         for subject_number in subject_list:
             for record in paths_dict[subject_number]:
+                print("\n")
                 record_name, psg_path, hyp_path = record
 
                 if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_name) == True):
