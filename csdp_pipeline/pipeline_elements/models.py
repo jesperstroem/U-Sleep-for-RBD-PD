@@ -59,6 +59,31 @@ class Split():
         return cls(id=id,
                    dataset_splits=dataset_splits, 
                    base_data_path=base_hdf5_path)
+    
+    @classmethod
+    def full_test(cls,
+                  base_hdf5_path,
+                  split_name="full_test"):
+        hdf5_paths = os.listdir(base_hdf5_path)
+        hdf5_paths = [f"{base_hdf5_path}/{path}" for path in hdf5_paths]
+
+        dataset_splits: list[Dataset_Split] = []
+        
+        for path in hdf5_paths:
+            with h5py.File(path, "r") as hdf5:
+                    subs = list(hdf5["data"].keys())
+
+                    split = Dataset_Split(path,
+                                        [],
+                                        [],
+                                        subs)
+                    
+                    dataset_splits.append(split)
+
+        return cls(id=split_name,
+                   dataset_splits=dataset_splits, 
+                   base_data_path=base_hdf5_path)
+            
 
     @classmethod
     def random(cls,
