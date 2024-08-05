@@ -29,18 +29,7 @@ class EESM_Cleaned(BaseDataset):
 
     def channel_mapping(self):
         return {
-            "ELA": Mapping(EarEEGRef.ELA, EarEEGRef.REF),
-            "ELB": Mapping(EarEEGRef.ELB, EarEEGRef.REF),
-            "ELC": Mapping(EarEEGRef.ELC, EarEEGRef.REF),
-            "ELT": Mapping(EarEEGRef.ELT, EarEEGRef.REF),
-            "ELE": Mapping(EarEEGRef.ELE, EarEEGRef.REF),
-            "ELI": Mapping(EarEEGRef.ELI, EarEEGRef.REF),
-            "ERA": Mapping(EarEEGRef.ERA, EarEEGRef.REF),
-            "ERB": Mapping(EarEEGRef.ERB, EarEEGRef.REF),
-            "ERC": Mapping(EarEEGRef.ERC, EarEEGRef.REF),
-            "ERT": Mapping(EarEEGRef.ERT, EarEEGRef.REF),
-            "ERE": Mapping(EarEEGRef.ERE, EarEEGRef.REF),
-            "ERI": Mapping(EarEEGRef.ERI, EarEEGRef.REF),
+            "Left-Right": Mapping(EarEEGRef.EL_AVG, EarEEGRef.ER_AVG),
         }    
 
     def list_records(self, basepath):
@@ -85,16 +74,36 @@ class EESM_Cleaned(BaseDataset):
         sample_rate = int(raw_data.info['sfreq'])
 
         y = np.array(y)
+        left_keys = ["ELA", "ELB", "ELC", "ELT", "ELE", "ELI"]
+        right_keys = ["ERA", "ERB", "ERC", "ERT", "ERE", "ERI"]
 
-        for c in self.channel_mapping().keys():
-            data: np.ndarray = raw_data.get_data(picks=c)
+       # left_data = np.array([])
+        #right_data = np.array([])
 
-            data = data.flatten()
+        #for c,i in enumerate(left_keys):
+        left_data: np.ndarray = raw_data.get_data(picks=left_keys)
 
-            data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y))
+        #    data = data.flatten()
 
-            x[c] = (data, sample_rate)
-        
+            #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y))
+         #   left_data[i] = data
+
+        #for c,i in enumerate(right_keys):
+        right_data: np.ndarray = raw_data.get_data(picks=right_keys)
+
+        #    data = data.flatten()
+
+            #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y)
+
+        left_avg = left_data.mean(axis=0)
+        right_avg = right_data.mean(axis=0)
+
+        deriv = left_avg-right_avg
+
+        data, nEpochs_min = self.slice_and_interpolate_channel(deriv, sample_rate, len(y))
+
+        x["Left-Right"] = (data, sample_rate)
+
         y=y[0:nEpochs_min]
         
         return x, y

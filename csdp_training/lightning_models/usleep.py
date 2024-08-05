@@ -53,11 +53,8 @@ class USleep_Lightning(Base_Lightning):
             x_eeg = x_eegs[:,i,...]
 
             x_eeg = torch.unsqueeze(x_eeg, 1)
-            x_eog = torch.unsqueeze(x_eog, 1)
-            
-            x_temp = torch.cat([x_eeg, x_eog], dim=1)
-            
-            pred = self(x_temp)
+
+            pred = self(x_eeg)
             pred = torch.nn.functional.softmax(pred, dim=1)
             pred = torch.squeeze(pred)
             pred = pred.swapaxes(0,1)
@@ -200,4 +197,4 @@ class USleep_Lightning(Base_Lightning):
             assert len(x_eog.shape) == 3
             self.channels_prediction(x_eeg, x_eog, ybatch, tags)
         else:
-            channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg)
+            channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg, ybatch, tags)
