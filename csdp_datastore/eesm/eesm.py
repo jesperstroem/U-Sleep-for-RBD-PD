@@ -95,8 +95,8 @@ class EESM_Cleaned(BaseDataset):
 
             #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y)
 
-        left_avg = left_data.mean(axis=0)
-        right_avg = right_data.mean(axis=0)
+        left_avg = np.nanmean(left_data, axis=0)# left_data.mean(axis=0)
+        right_avg = np.nanmean(right_data, axis=0)
 
         deriv = left_avg-right_avg
 
