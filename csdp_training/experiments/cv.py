@@ -33,7 +33,8 @@ class CV_Experiment:
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  experiment_name: str = "LOSO",
                  continue_existing: bool = False,
-                 neptune_run: neptune.Run | None = None):
+                 neptune_run: neptune.Run | None = None,
+                 split_filepath = None):
         """_summary_
 
         Args:
@@ -68,11 +69,15 @@ class CV_Experiment:
         #if continue_existing == True and self.experiment_exists():
         #    self.split_data = self.load_existing_split()
         #else:
-        self.split_data: [Split] = self.__create_split(self.dataset_paths,
-                                                       num_folds=num_folds,
-                                                       num_validation_subjects=num_validation_subjects)
+
+        if split_filepath != None:
+            self.split_data = Split.file(split_filepath)
+        else:
+            self.split_data: [Split] = self.__create_split(self.dataset_paths,
+                                                           num_folds=num_folds,
+                                                           num_validation_subjects=num_validation_subjects)
         
-        self.__save_split_data(self.split_data, experiment_name)
+            self.__save_split_data(self.split_data, experiment_name)
 
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
