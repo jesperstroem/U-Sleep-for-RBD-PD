@@ -146,9 +146,9 @@ class Random_Sampler(ISampler):
                 print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
                 return None
             
-            # if len(eegs) == 0 and len(eogs) == 0:
-            #     print(f"No EEG or EOG available. Available channels: {psg} from {r_subject}, {r_record}")
-            #     return None
+            if len(eegs) == 0 and len(eogs) == 0:
+                print(f"No EEG or EOG available. Available channels: {psg} from {r_subject}, {r_record}")
+                return None
 
             # Choose random index of a random label
             label_set = np.unique(hyp)
