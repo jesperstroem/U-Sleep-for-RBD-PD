@@ -71,7 +71,14 @@ class CV_Experiment:
         #else:
 
         if split_filepath != None:
-            self.split_data = Split.file(split_filepath)
+            splits = []
+            filepaths = os.listdir(split_filepath)
+            filepaths = [f"{split_filepath}/{p}" for p in filepaths]
+            
+            for path in filepaths:
+                splits.append(Split.file(path))
+
+            self.split_data = splits
         else:
             self.split_data: [Split] = self.__create_split(self.dataset_paths,
                                                            num_folds=num_folds,
