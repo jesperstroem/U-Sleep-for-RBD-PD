@@ -172,11 +172,9 @@ class BaseDataset(ABC):
 
             try:
                 new_data[calculated_key] = data[first] - data[second]
-            except:
-                pass
-
-        if len(new_data.keys()) == 0:
-            raise Exception("No calculated keys")
+            except KeyError as e:
+                self.log_error(f"Skipping calculation of {calculated_key} due to error: {e}")
+                continue
         
         return new_data
 
@@ -212,8 +210,11 @@ class BaseDataset(ABC):
 
         try:
             new_dict = self.add_calculated_channels(new_dict)
-        except:
-            raise Exception("Could not calculate new channels")
+        except Exception as e:
+            raise e
+        
+        if len(new_dict.keys()) == 0:
+            raise Exception("No available data channels after channel calculation")
 
         for key in new_dict.keys():
             try:
@@ -401,8 +402,8 @@ class BaseDataset(ABC):
                 
                 try:
                     x = self.__map_channels(x, len(y))
-                except:
-                    self.log_error("Could not map data", subject=subject_number, record=record_name)
+                except Exception as e:
+                    self.log_error(f"Could not map data due to error: {e}", subject=subject_number, record=record_name)
                     continue 
 
                 y = self.__map_labels(y)
