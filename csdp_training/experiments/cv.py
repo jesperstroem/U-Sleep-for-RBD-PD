@@ -229,8 +229,7 @@ class CV_Experiment:
                 subs = [(file, sub) for sub in subs]
                 all_subs.extend(subs)
         
-        kf = KFold(n_splits=num_folds,
-                shuffle=True)
+        kf = KFold(n_splits=num_folds, shuffle=True)
         
         for i, (train_index, test_index) in enumerate(kf.split(all_subs)):
             split_data = Split(id=i,

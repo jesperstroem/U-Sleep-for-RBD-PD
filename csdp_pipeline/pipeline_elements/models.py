@@ -61,6 +61,38 @@ class Split():
                    base_data_path=base_hdf5_path)
     
     @classmethod
+    def train_and_holdout(cls,
+                          base_data_path,
+                          training_hdf5_path,
+                          test_hdf5_path,
+                          split_name="train_and_holdout"):
+        dataset_splits: list[Dataset_Split] = []
+        
+        with h5py.File(training_hdf5_path, "r") as hdf5:
+            subs = list(hdf5["data"].keys())
+
+            training_split = Dataset_Split(training_hdf5_path,
+                                           subs,
+                                           [],
+                                           [])
+        
+            dataset_splits.append(training_split)
+
+        with h5py.File(test_hdf5_path, "r") as hdf5:
+            subs = list(hdf5["data"].keys())
+
+            test = Dataset_Split(training_hdf5_path,
+                                 [],
+                                 [],
+                                 subs)
+        
+            dataset_splits.append(test)
+
+        return cls(id=split_name,
+                   dataset_splits=dataset_splits, 
+                   base_data_path=base_data_path)
+    
+    @classmethod
     def full_test(cls,
                   base_hdf5_path,
                   split_name="full_test"):
