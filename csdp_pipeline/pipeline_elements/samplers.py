@@ -115,7 +115,9 @@ class Random_Sampler(ISampler):
     
     def __get_sample(self) -> ISample:
         
-        possible_sets = self.split_data.dataset_splits
+        all_sets: list[Dataset_Split] = self.split_data.dataset_splits
+        possible_sets = [split for split in all_sets if len(split.train) > 0]
+        
         probs = self.probs
         
          # Choose random dataset
