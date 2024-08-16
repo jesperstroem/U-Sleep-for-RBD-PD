@@ -52,16 +52,20 @@ class Random_Sampler(ISampler):
                  num_epochs: int, 
                  num_iterations: int,
                  pick_function = None):
+        assert split_type == "train"
+
         if pick_function == None:
             self.pick_function = self.__pick_random_EEG_and_EOG
         else:
             self.pick_function = pick_function
 
+        #Remove splits if they do not have training subjects
+        split_data.dataset_splits = filter(lambda x: len(x.train) > 0, split_data.dataset_splits)
+
         self.split_type = split_type
         self.split_data = split_data
-        self.num_records = self.__count_records()
 
-        assert split_type == "train"
+        self.num_records = self.__count_records()
 
         try:
             self.probs = self.calc_probs()
@@ -115,14 +119,13 @@ class Random_Sampler(ISampler):
     
     def __get_sample(self) -> ISample:
         
-        all_sets: list[Dataset_Split] = self.split_data.dataset_splits
-        possible_sets = [split for split in all_sets if len(split.train) > 0]
+        possible_sets: list[Dataset_Split] = self.split_data.dataset_splits
         
         probs = self.probs
         
          # Choose random dataset
         r_dataset: Dataset_Split = np.random.choice(possible_sets, 1, p=probs)[0]
-
+        
         subjects = r_dataset.get_subjects_from_string(self.split_type)
 
         r_subject = np.random.choice(subjects, 1)[0]
@@ -254,7 +257,6 @@ class Random_Sampler(ISampler):
                     records = len(subj.keys())
                     tot_records += records
                 
-                if tot_records > 0:
                     num_records.append(tot_records)
 
         return num_records
