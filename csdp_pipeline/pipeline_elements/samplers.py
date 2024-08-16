@@ -252,7 +252,8 @@ class Random_Sampler(ISampler):
                     records = len(subj.keys())
                     tot_records += records
                 
-                num_records.append(tot_records)
+                if tot_records > 0:
+                    num_records.append(tot_records)
 
         return num_records
 
