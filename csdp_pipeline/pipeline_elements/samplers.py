@@ -59,11 +59,11 @@ class Random_Sampler(ISampler):
         else:
             self.pick_function = pick_function
 
-        #Remove splits if they do not have training subjects
-        split_data.dataset_splits = filter(lambda x: len(x.train) > 0, split_data.dataset_splits)
-
+        #Remove splits if they do not have training
+        #split_data.dataset_splits = filter(lambda x: len(x.train) > 0, split_data.dataset_splits)
+        
         self.split_type = split_type
-        self.split_data = split_data
+        self.split_datasets: list(Dataset_Split) = list(filter(lambda x: len(x.train) > 0, split_data.dataset_splits))
 
         self.num_records = self.__count_records()
 
@@ -79,13 +79,13 @@ class Random_Sampler(ISampler):
     
     def print_report(self):
         probs = self.probs
-        datasets = [split.dataset_filepath for split in self.split_data.dataset_splits]
+        datasets = [split.dataset_filepath for split in self.split_datasets]
         num_records = self.num_records
 
         print(f"Training on datasets {datasets}. The number of records are {num_records}, which yields stratified sampling probabilities {probs}")
         print("Training subjects overview:")
 
-        for dataset_split in self.split_data.dataset_splits:
+        for dataset_split in self.split_datasets:
             print(f"{dataset_split.dataset_filepath}: {dataset_split.train}")
 
     def get_sample(self, index: int) -> ISample:
@@ -100,12 +100,12 @@ class Random_Sampler(ISampler):
         return sample
     
     def calc_probs(self):
-        total_num_datasets = len(self.split_data.dataset_splits)
+        total_num_datasets = len(self.split_datasets)
         total_num_records = sum(self.num_records)
         
         probs = []
         
-        for i, _ in enumerate(self.split_data.dataset_splits):
+        for i, _ in enumerate(self.split_datasets):
             num_records = self.num_records[i]
             
             strat_prob = num_records/total_num_records
@@ -119,7 +119,7 @@ class Random_Sampler(ISampler):
     
     def __get_sample(self) -> ISample:
         
-        possible_sets: list[Dataset_Split] = self.split_data.dataset_splits
+        possible_sets: list[Dataset_Split] = self.split_datasets
         
         probs = self.probs
         
@@ -237,7 +237,7 @@ class Random_Sampler(ISampler):
     def __count_records(self):
         num_records = []
         
-        for f in self.split_data.dataset_splits:
+        for f in self.split_datasets:
             file_path = f.dataset_filepath
 
             with h5py.File(file_path, "r") as hdf5:
@@ -257,7 +257,7 @@ class Random_Sampler(ISampler):
                     records = len(subj.keys())
                     tot_records += records
                 
-                    num_records.append(tot_records)
+                num_records.append(tot_records)
 
         return num_records
 
@@ -386,3 +386,4 @@ class Determ_sampler(ISampler):
         
         return eeg_data, eog_data, eeg_tag, eog_tag
     
+
