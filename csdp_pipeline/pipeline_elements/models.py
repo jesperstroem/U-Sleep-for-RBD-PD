@@ -68,7 +68,7 @@ class Split():
                           split_name="train_and_holdout"):
         dataset_splits: list[Dataset_Split] = []
         
-        with h5py.File(training_hdf5_path, "r") as hdf5:
+        with h5py.File(f"{base_data_path}/{training_hdf5_path}", "r") as hdf5:
             subs = list(hdf5["data"].keys())
 
             training_split = Dataset_Split(training_hdf5_path,
@@ -78,7 +78,7 @@ class Split():
         
             dataset_splits.append(training_split)
 
-        with h5py.File(test_hdf5_path, "r") as hdf5:
+        with h5py.File(f"{base_data_path}/{test_hdf5_path}", "r") as hdf5:
             subs = list(hdf5["data"].keys())
 
             test = Dataset_Split(training_hdf5_path,
