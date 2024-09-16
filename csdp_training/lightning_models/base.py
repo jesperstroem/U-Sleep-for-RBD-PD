@@ -7,7 +7,7 @@ Created on Thu Feb  2 13:40:59 2023
 
 import torch
 import torch.nn as nn
-import pytorch_lightning as pl
+import lightning as pl
 from csdp_training.utility import kappa, acc, f1, plot_confusionmatrix, filter_unknowns
 from sklearn.metrics import confusion_matrix
 import numpy as np
@@ -49,11 +49,11 @@ class Base_Lightning(pl.LightningModule):
         self.save_hyperparameters(ignore=['model'])
 
     def forward(self, x):
-        return self.model(x.float()) 
+        return self.model(x.float())
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        
+
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
                                                              mode='max',
                                                              factor=self.lr_factor,
@@ -70,17 +70,17 @@ class Base_Lightning(pl.LightningModule):
             'monitor': 'valKap',
             'lr_scheduler': scheduler
         }
-    
+
     def compute_train_metrics(self, y_pred, y_true):
         y_pred = torch.swapdims(y_pred, 1, 2)
         y_pred = torch.reshape(y_pred, (-1, 5))
         y_true = torch.flatten(y_true)
-        
+
         y_true = y_true.long()
         loss = self.loss(y_pred, y_true)
 
         y_pred = torch.argmax(y_pred, dim=1)
-        
+
         try:
             accu = acc(y_pred, y_true)
             kap = kappa(y_pred, y_true, 5)
@@ -89,32 +89,32 @@ class Base_Lightning(pl.LightningModule):
             accu = None
             kap = None
             f1_score = None
-        
+
         return loss, accu, kap, f1_score
-    
-    
+
+
     def compute_test_metrics(self, y_pred, y_true):
         y_true = torch.flatten(y_true)
-        
+
         accu = acc(y_pred, y_true)
         kap = kappa(y_pred, y_true, 5)
         f1_score = f1(y_pred, y_true, average=False)
-        
+
         return accu, kap, f1_score
 
     def on_train_epoch_end(self):
         all_outputs = self.training_step_outputs
-        
+
         mean_loss = torch.mean(torch.stack(all_outputs, dim=0))
-        
-        self.log('trainLoss', mean_loss, batch_size=self.batch_size, rank_zero_only=True)    
+
+        self.log('trainLoss', mean_loss, batch_size=self.batch_size, rank_zero_only=True)
 
         self.training_step_outputs.clear()
-    
+
     def on_validation_epoch_end(self):
         all_losses = self.validation_step_loss
         all_acc = self.validation_step_acc
-        all_kap = self.validation_step_kap    
+        all_kap = self.validation_step_kap
         all_f1 = self.validation_step_f1
         all_preds = self.validation_preds
         all_labels = self.validation_labels
@@ -132,15 +132,15 @@ class Base_Lightning(pl.LightningModule):
         mean_loss = torch.mean(torch.stack(all_losses, dim=0))
         mean_acc = torch.mean(torch.stack(all_acc, dim=0))
         mean_kap = torch.mean(torch.stack(all_kap, dim=0))
-        
+
         mean_f1c0 = torch.mean(torch.stack(all_f1, dim=1)[0])
         mean_f1c1 = torch.mean(torch.stack(all_f1, dim=1)[1])
         mean_f1c2 = torch.mean(torch.stack(all_f1, dim=1)[2])
         mean_f1c3 = torch.mean(torch.stack(all_f1, dim=1)[3])
         mean_f1c4 = torch.mean(torch.stack(all_f1, dim=1)[4])
-        
+
         batch_size=1
-        
+
         self.log('valLoss', mean_loss, batch_size=batch_size, rank_zero_only=True)
         self.log('valAcc', mean_acc, batch_size=batch_size, rank_zero_only=True)
         self.log('valKap', mean_kap, batch_size=batch_size, rank_zero_only=True)
