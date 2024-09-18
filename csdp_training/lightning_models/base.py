@@ -48,6 +48,8 @@ class Base_Lightning(pl.LightningModule):
 
         self.save_hyperparameters(ignore=['model'])
 
+        self.log_to_progress_bar=False
+
     def forward(self, x):
         return self.model(x.float())
 
@@ -143,7 +145,7 @@ class Base_Lightning(pl.LightningModule):
 
         self.log('valLoss', mean_loss, batch_size=batch_size, rank_zero_only=True)
         self.log('valAcc', mean_acc, batch_size=batch_size, rank_zero_only=True)
-        self.log('valKap', mean_kap, batch_size=batch_size, rank_zero_only=True)
+        self.log('valKap', mean_kap, batch_size=batch_size, rank_zero_only=True, prog_bar=self.log_to_progress_bar)
         self.log('val_f1_c0', mean_f1c0, batch_size=batch_size, rank_zero_only=True)
         self.log('val_f1_c1', mean_f1c1, batch_size=batch_size, rank_zero_only=True)
         self.log('val_f1_c2', mean_f1c2, batch_size=batch_size, rank_zero_only=True)

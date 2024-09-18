@@ -147,7 +147,10 @@ class USleep_Lightning(Base_Lightning):
         return step_loss
 
     def validation_step(self, batch, _):
-        # Step per record
+        '''Step per record'''
+
+        #make sure  a single record was passed (no batching):
+        assert batch[0].shape[0] == 1
 
         if self.include_eog is True:
             x_eeg, x_eog, ybatch, _ = batch
@@ -192,17 +195,20 @@ class USleep_Lightning(Base_Lightning):
         self.validation_preds.append(pred)
 
     def test_step(self, batch, _):
-        # Step per record
-        x_eeg, x_eog, ybatch, meta = batch
-
-        assert len(x_eeg.shape) == 3
-        ybatch = torch.flatten(ybatch)
+        '''Step per record'''
 
         if self.include_eog is True:
+            x_eeg, x_eog, ybatch, meta = batch
+
             assert len(x_eog.shape) == 3
+            assert len(x_eeg.shape) == 3
             channels_pred = self.channels_prediction(x_eeg, x_eog)
         else:
+            x_eeg, ybatch, meta = batch
+            assert len(x_eeg.shape) == 3
             channels_pred = self.channels_prediction_EEGONLY(x_eeg)
+
+        ybatch = torch.flatten(ybatch)
 
         log_test_step("results",
                       self.logger.version,
