@@ -6,6 +6,7 @@ from csdp_training.lightning_models.base import Base_Lightning
 from csdp_training.utility import log_test_step
 from ml_architectures.usleep.usleep import USleep
 import pytorch_lightning as pl
+import os
 
 class USleep_Lightning(Base_Lightning):
     def __init__(
@@ -175,6 +176,8 @@ class USleep_Lightning(Base_Lightning):
                  output_folder_prefix,
                  load_best_model = True):
         self.eval()
+        
+        os.mkdir(output_folder_prefix)
         
         self.output_folder_prefix = output_folder_prefix
 

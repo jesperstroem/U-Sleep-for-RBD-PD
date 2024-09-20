@@ -26,12 +26,12 @@ class CV_Experiment:
                  batch_size: int,
                  num_folds: int,
                  earlystopping_patience: int,
+                 logging_folder: str,
                  num_validation_subjects: int = 1,
                  batches_per_epoch: int = 100,
                  pick_all_channels: [bool] = [False, False, False],
                  test_first: bool = False,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
-                 experiment_name: str = "LOSO",
                  continue_existing: bool = False,
                  neptune_run: neptune.Run | None = None,
                  split_filepath = None):
@@ -57,7 +57,7 @@ class CV_Experiment:
         self.base_data_path = base_data_path
         self.dataset_paths = [f"{base_data_path}/{p}" for p in datasets]
         self.pipeline_configuration = pipeline_configuration
-        self.experiment_name = experiment_name
+        self.logging_folder = logging_folder
         self.training_epochs = training_epochs
         self.neptune_run = neptune_run
         self.base_net = base_net
@@ -84,7 +84,7 @@ class CV_Experiment:
                                                            num_folds=num_folds,
                                                            num_validation_subjects=num_validation_subjects)
         
-            self.__save_split_data(self.split_data, experiment_name)
+            self.__save_split_data(self.split_data, logging_folder)
 
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
@@ -148,7 +148,7 @@ class CV_Experiment:
 
         net.run_test(trainer,
                      loader, 
-                     output_folder_prefix=f"{self.experiment_name}/split_{split_name}",
+                     output_folder_prefix=f"{self.logging_folder}/sleep_scorings/split_{split_name}",
                      load_best_model=load_best_model)
 
     def __init_trainer(self,
@@ -156,7 +156,7 @@ class CV_Experiment:
                        split_data: Split,
                        split_name: str) -> pl.Trainer:
         
-        checkpoint_callback = ModelCheckpoint(filename=f"best-{split_name}", monitor="valKap", mode="max")
+        checkpoint_callback = ModelCheckpoint(dirpath=f"{self.logging_folder}/weights", filename=f"best-{split_name}", monitor="valKap", mode="max")
         
         early_stopping = EarlyStopping(
             monitor="valKap",
@@ -260,14 +260,12 @@ class CV_Experiment:
         return all_split_data
     
 
-    def __save_split_data(self, splits: [Split], experiment_name):
-        cwd = os.getcwd()
-
-        os.makedirs(f"{cwd}/splits/{experiment_name}")
+    def __save_split_data(self, splits: [Split], logging_folder):
+        os.mkdir(f"{logging_folder}/splits")
 
         for _, split in enumerate(splits):
             split: Split = split
-            split.dump_file(path=f"{cwd}/splits/{experiment_name}", name=split.id)
+            split.dump_file(path=f"{logging_folder}/splits", name=split.id)
 
     def __create_global_split(self, dataset_filepaths: list[str]):
         split_data = Split(id="test",
