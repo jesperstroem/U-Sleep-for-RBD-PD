@@ -13,7 +13,7 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 import numpy as np
 
-def log_test_step(base, run_id, dataset, subject, record, **kwargs):
+def log_test_step(base, dataset, subject, record, **kwargs):
         """
         Used for logging raw predictions and true labels for a single step. Extra logging to Neptune happens through kwargs.
         Logging to file at location: ???
@@ -31,7 +31,7 @@ def log_test_step(base, run_id, dataset, subject, record, **kwargs):
 
         identifier = "preds"
 
-        path = f"{base}/{run_id}/{dataset}/{subject}/{record}"
+        path = f"{base}/{dataset}/{subject}/{record}"
 
         if not os.path.exists(path):
             os.makedirs(path)

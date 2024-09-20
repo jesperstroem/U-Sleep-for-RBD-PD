@@ -65,8 +65,7 @@ class USleep_Lightning(Base_Lightning):
 
             all_preds[f"{eeg_tag}"] = pred
                 
-        log_test_step("results",
-                      f"{self.output_folder_prefix}", 
+        log_test_step(f"{self.output_folder_prefix}", 
                       dataset=tags["dataset"],
                       subject=tags["subject"],
                       record=tags["record"],
@@ -106,8 +105,7 @@ class USleep_Lightning(Base_Lightning):
 
                 all_preds[f"{eeg_tag}/{eog_tag}"] = pred
                 
-        log_test_step("results",
-                      f"{self.output_folder_prefix}", 
+        log_test_step(self.output_folder_prefix,
                       dataset=tags["dataset"],
                       subject=tags["subject"],
                       record=tags["record"],
