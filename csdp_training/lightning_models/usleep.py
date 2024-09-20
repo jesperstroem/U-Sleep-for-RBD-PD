@@ -177,8 +177,8 @@ class USleep_Lightning(Base_Lightning):
                  load_best_model = True):
         self.eval()
         
-        os.mkdir(output_folder_prefix)
-        
+        os.makedirs(output_folder_prefix)
+
         self.output_folder_prefix = output_folder_prefix
 
         if load_best_model == True:

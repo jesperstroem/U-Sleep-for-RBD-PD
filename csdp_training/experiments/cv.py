@@ -261,7 +261,7 @@ class CV_Experiment:
     
 
     def __save_split_data(self, splits: [Split], logging_folder):
-        os.mkdir(f"{logging_folder}/splits")
+        os.makedirs(f"{logging_folder}/splits")
 
         for _, split in enumerate(splits):
             split: Split = split
