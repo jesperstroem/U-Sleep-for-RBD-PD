@@ -66,9 +66,7 @@ class CV_Experiment:
         self.num_folds = num_folds
         self.num_validation_subjects = num_validation_subjects
 
-        #if continue_existing == True and self.experiment_exists():
-        #    self.split_data = self.load_existing_split()
-        #else:
+        os.mkdir(logging_folder)
 
         if split_filepath != None:
             splits = []
