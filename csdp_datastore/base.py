@@ -38,10 +38,12 @@ class BaseDataset(ABC):
             logging_path (str, optional): Where to save the logs. Defaults to "./SleepDataPipeline/logs".
             port_on_init (bool, optional): If the data should be transformed as soon as you initialize the class. Defaults to True.
         """
+        self.subject_context = None
+        self.record_context = None
         self.max_num_subjects = max_num_subjects
         self.dataset_path = dataset_path
         self.output_path = output_path
-        self.logger = LoggingModule(logging_path)
+        self.logger = LoggingModule()
         self.scale_and_clip = scale_and_clip
         self.output_sample_rate = output_sample_rate
         self.overwrite_existing = overwrite_existing
@@ -123,17 +125,14 @@ class BaseDataset(ABC):
         """
         pass
     
+    def log_info(self, msg):
+        self.logger.log(msg, self.dataset_name(), self.subject_context, self.record_context, EventSeverity.Info)
     
-    def log_info(self, msg, subject = None, record = None):
-        self.logger.log(msg, self.dataset_name(), subject, record, EventSeverity.Info)
-    
-    
-    def log_warning(self, msg, subject = None, record = None):
-        self.logger.log(msg, self.dataset_name(), subject, record, EventSeverity.Warning)
+    def log_warning(self, msg):
+        self.logger.log(msg, self.dataset_name(), self.subject_context, self.record_context, EventSeverity.Warning)
         
-        
-    def log_error(self, msg, subject = None, record = None):
-        self.logger.log(msg, self.dataset_name(), subject, record, EventSeverity.Error)
+    def log_error(self, msg):
+        self.logger.log(msg, self.dataset_name(), self.subject_context, self.record_context, EventSeverity.Error)
     
     def __check_paths(self, paths_dict):
         for k in paths_dict.keys():
@@ -336,7 +335,7 @@ class BaseDataset(ABC):
                 subsubgrp_psg.create_dataset(channel_name, data=channel_data)
             
             subgrp_record.create_dataset("hypnogram", data=y)
-            self.log_info('Successfully wrote record to hdf5 file', subject_id, record_id)
+            self.log_info('Successfully wrote record to hdf5 file')
     
     def download(self):
         self.log_warning('Download function was called, but no download functionality has been implemented')
@@ -389,13 +388,15 @@ class BaseDataset(ABC):
                 record_name, psg_path, hyp_path = record
 
                 if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_name) == True):
-                    self.log_info(f"Skipping record, since it already exists", subject=subject_number, record=record)
+                    self.log_info(f"Skipping record, since it already exists")
                     continue
 
+                self.subject_context = subject_number
+                self.record_context = record_name
                 psg = self.read_psg((psg_path, hyp_path))
-                
+
                 if psg == None:
-                    self.log_error("PSG could not be read, skipping it", subject_number, record)
+                    self.log_error("PSG could not be read, skipping it")
                     continue
                 
                 x, y = psg
@@ -403,7 +404,7 @@ class BaseDataset(ABC):
                 try:
                     x = self.__map_channels(x, len(y))
                 except Exception as e:
-                    self.log_error(f"Could not map data due to error: {e}", subject=subject_number, record=record_name)
+                    self.log_error(f"Could not map data due to error: {e}")
                     continue 
 
                 y = self.__map_labels(y)
@@ -415,6 +416,10 @@ class BaseDataset(ABC):
                     x, 
                     y
                 )
+
+                self.subject_context = None
+                self.record_context = None
         
         self.save_dataset_metadata()
         self.log_info('Successfully ported dataset')
+        self.logger.final()

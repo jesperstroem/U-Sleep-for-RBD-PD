@@ -45,7 +45,7 @@ class PHYS(BaseDataset):
             exists = os.path.exists(label_path) and os.path.exists(data_path)
             
             if not exists:
-                self.log_warning('The record did not exist', subject)
+                self.log_warning('The record did not exist')
                 continue
             
             paths_dict[subject] = [(record_name, data_path, label_path)]
@@ -61,7 +61,7 @@ class PHYS(BaseDataset):
             data_path = data_path.rstrip('.hea')
             r = wfdb.rdrecord(data_path)
         except ValueError:
-            self.log_error("Could not read data file", subject=None, record=data_path)
+            self.log_error("Could not read data file")
             return None
 
         with h5py.File(label_path, 'r') as f:
@@ -96,7 +96,7 @@ class PHYS(BaseDataset):
             label_len = len(y)*sample_rate*30
             
             if len(data) < label_len:
-                self.log_error("Not enough data for the amount of labels", subject=None, record=data_path)
+                self.log_error("Not enough data for the amount of labels")
                 return None
             
             data = data[:label_len]

@@ -78,7 +78,7 @@ class Isruc_base(BaseDataset):
             y_trunc = y[:int(x_len/self.sample_rate()/30)]
             trunc_len = len(y)-len(y_trunc)
             if trunc_len > 31:
-                self.log_warning(f"Length of truncated y was: {trunc_len}.", subject=None, record=labelpath)
+                self.log_warning(f"Length of truncated y was: {trunc_len}.")
                 return None
             
         return x, y_trunc

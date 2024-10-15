@@ -81,7 +81,7 @@ class Base_DOD(BaseDataset):
             
                 assert(len(y) == x_num_epochs), "Length of signal does not match the number of labels."
         except:
-            self.log_info("Could not read record", record=record)
+            self.log_info("Could not read record")
             return None
 
         return x, y

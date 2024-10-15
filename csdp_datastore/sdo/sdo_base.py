@@ -124,7 +124,7 @@ class SleepdataOrg(BaseDataset):
             labels_exist = os.path.exists(hyp_file_path)
             
             if not labels_exist:
-                self.log_warning(f"File does not exist, skipping this record", subject=None, record=hyp_file_path)
+                self.log_warning(f"File does not exist, skipping this record")
                 continue
             
             paths_dict.setdefault(subject_number, []).append((record_name, psg_file_path, hyp_file_path))
@@ -182,7 +182,7 @@ class SleepdataOrg(BaseDataset):
             try:
                 final_channel_data = self.slice_channel(relative_channel_data, len(y), sample_rate)
             except Exception as msg:
-                self.log_error(msg, subject=None, record=path_to_psg)
+                self.log_error(msg)
                 return None
 
             assert len(final_channel_data) == len(y)*sample_rate*30, f"Channel length was {len(final_channel_data)}, but according to the number of labels it should be {len(y)*sample_rate*30}. Check the sample rate or override slice_channels if needed."
@@ -197,7 +197,6 @@ class SleepdataOrg(BaseDataset):
 
         if len(not_found_chnls) > 0:
             self.log_warning('Did not find channels: {channels} was not found in the record. Possibilities are {present}'.format(channels=not_found_chnls,
-                                                                                                                                 present=data.ch_names),
-                             record=path_to_psg)
+                                                                                                                                 present=data.ch_names))
             
         return x, y

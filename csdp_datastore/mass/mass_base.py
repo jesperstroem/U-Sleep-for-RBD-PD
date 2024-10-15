@@ -149,7 +149,7 @@ class Mass_base(BaseDataset):
         try:
             data.crop(start_time, end_time, True)
         except ValueError:
-            self.log_error("Could not crop data", subject=None, record=(datapath, labelpath))
+            self.log_error("Could not crop data")
             return None
 
         # In theory, the labels should match the data after cropping it, but it doesnt. Seems like the epoch length is not 30 seconds but 30.002 seconds or something..
@@ -163,7 +163,7 @@ class Mass_base(BaseDataset):
         
         # To make sure the difference is not too big.
         if diff > sample_rate*3:
-            self.log_error(f"Diff between label and data was {diff}, skipping", subject=None, record=datapath)
+            self.log_error(f"Diff between label and data was {diff}, skipping")
             return None
         
         not_found_chnls = []
@@ -181,7 +181,6 @@ class Mass_base(BaseDataset):
         
         if len(not_found_chnls) > 0:
             self.log_warning('Did not find channels: {channels} was not found in the record. Possibilities are {present}'.format(channels=not_found_chnls,
-                                                                                                                                 present=data.ch_names),
-                             record=datapath)
+                                                                                                                                 present=data.ch_names))
         
         return dic, y

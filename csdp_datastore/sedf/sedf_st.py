@@ -32,7 +32,7 @@ class SEDF_ST(Sedf_PhysioNet):
         try:
             data.crop(start_time, end_time, True)
         except ValueError:
-            self.log_error("Could not crop data", subject=None, record=(psg_path, hyp_path))
+            self.log_error("Could not crop data")
             return None
 
         labels = list(hyp.description)

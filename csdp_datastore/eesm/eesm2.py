@@ -64,7 +64,7 @@ class EESM2(EESM_Cleaned):
         try:
             label_pd = pd.read_csv(hyp_path, sep = '\t')
         except:
-            self.log_warning("Could not read CSV file", subject="", record=psg_path)
+            self.log_warning("Could not read CSV file")
             return None
 
         y = label_pd["stages"].values.tolist()

@@ -72,7 +72,7 @@ class DCSM(BaseDataset):
                     
                     x[channel] = (channel_data, self.sample_rate()) # We are assuming sample rate is same across channels
         except Exception as msg:
-            self.log_error(msg, subject=None, record=psg_path)
+            self.log_error(msg)
             return None
 
         with open(hyp_path) as f:
