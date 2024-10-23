@@ -21,9 +21,9 @@ class LoggingModule:
         for l in self.loggers:
             l.log_message(msg, dataset, severity, subject, record, timestamp)
         
-    def final(self):
+    def final(self, dataset_name):
         for l in self.loggers:
-            l.final()
+            l.final(dataset_name)
 
 
 class Logger(ABC):        
@@ -31,7 +31,7 @@ class Logger(ABC):
     def log_message(self, msg, dataset, severity, subject, record, timestamp):
         pass
 
-    def final(self):
+    def final(self, dataset_name):
         pass
 
 class CmdLogger(Logger):
@@ -51,8 +51,8 @@ class ExcelLogger(Logger):
     def log_message(self, msg, dataset, severity, subject, record, timestamp):
         self.messages.append([timestamp, dataset, subject, record, severity.value, msg])
     
-    def final(self):
-        workbook = xls.Workbook('port_log.xlsx')
+    def final(self, dataset_name):
+        workbook = xls.Workbook(f'{dataset_name}_port_log.xlsx')
         worksheet = workbook.add_worksheet()
         worksheet.write_row(0,0,["time", "dataset", "subject", "record", "severity", "message"])
         row_index = 1

@@ -422,4 +422,4 @@ class BaseDataset(ABC):
         
         self.save_dataset_metadata()
         self.log_info('Successfully ported dataset')
-        self.logger.final()
+        self.logger.final(self.dataset_name())
