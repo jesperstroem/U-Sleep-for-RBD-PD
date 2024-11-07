@@ -7,6 +7,7 @@ from csdp_training.utility import log_test_step
 from ml_architectures.usleep.usleep import USleep
 import pytorch_lightning as pl
 import os
+import torch.nn as nn
 
 class USleep_Lightning(Base_Lightning):
     def __init__(
@@ -72,6 +73,17 @@ class USleep_Lightning(Base_Lightning):
                       preds=all_preds,
                       labels=ybatch.to("cpu"))
     
+    def get_preds(self, x, resolution):
+        self.model.classifier.avgpool = nn.AvgPool1d(resolution)
+
+        pred = self(x)
+        pred = torch.nn.functional.softmax(pred, dim=1)
+        pred = torch.squeeze(pred)
+        pred = pred.swapaxes(0,1)
+        pred = pred.to("cpu")
+
+        return pred
+
     def channels_prediction(self, x_eegs, x_eogs, ybatch, tags):
         eegshape = x_eegs.shape
         eogshape = x_eogs.shape
@@ -81,7 +93,9 @@ class USleep_Lightning(Base_Lightning):
         
         assert eegshape[2] == eogshape[2]
 
-        all_preds = {}
+        output_dens_3840 = {}
+        output_dens_384 = {}
+        output_dens_1 = {}
 
         for i in range(num_eegs):
             for p in range(num_eogs):
@@ -94,22 +108,24 @@ class USleep_Lightning(Base_Lightning):
                 
                 x_temp = torch.cat([x_eeg, x_eog], dim=1)
                 
-                pred = self(x_temp)
-                pred = torch.nn.functional.softmax(pred, dim=1)
-                pred = torch.squeeze(pred)
-                pred = pred.swapaxes(0,1)
-                pred = pred.to("cpu")
+                y_3840 = self.get_preds(x_temp, 3840)
+                y_384 = self.get_preds(x_temp, 384)
+                y_1 = self.get_preds(x_temp, 1)
 
                 eeg_tag = tags["eeg"][i]
                 eog_tag = tags["eog"][p]
 
-                all_preds[f"{eeg_tag}/{eog_tag}"] = pred
+                output_dens_3840[f"{eeg_tag}/{eog_tag}"] = y_3840
+                output_dens_384[f"{eeg_tag}/{eog_tag}"] = y_384
+                output_dens_1[f"{eeg_tag}/{eog_tag}"] = y_1
                 
         log_test_step(self.output_folder_prefix,
                       dataset=tags["dataset"],
                       subject=tags["subject"],
                       record=tags["record"],
-                      preds=all_preds,
+                      output_dens_3840=output_dens_3840,
+                      output_dens_384=output_dens_384,
+                      output_dens_1=output_dens_1,
                       labels=ybatch.to("cpu"))
     
     def prep_batch(self, x_eeg, x_eog):
