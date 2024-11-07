@@ -314,7 +314,7 @@ class BaseDataset(ABC):
         pq.write_table(hyp_table, output_path + "hypnogram.parquet")
         
         
-    def write_record_to_database_hdf5(self, output_basepath, subject_id, record_id, x, y): 
+    def write_record_to_database_hdf5(self, output_basepath, subject_id, record_id, x, y, meta): 
         """
         Function to write PSG data along with labels to the shared database containing all datasets in HDF5 format.
         """
@@ -335,6 +335,8 @@ class BaseDataset(ABC):
                 subsubgrp_psg.create_dataset(channel_name, data=channel_data)
             
             subgrp_record.create_dataset("hypnogram", data=y)
+            subgrp_record.create_dataset("meta", data=meta)
+
             self.log_info('Successfully wrote record to hdf5 file')
     
     def download(self):
@@ -385,6 +387,9 @@ class BaseDataset(ABC):
         for subject_number in subject_list:
             for record in paths_dict[subject_number]:
                 print("\n")
+
+                self.meta = {}
+
                 record_name, psg_path, hyp_path = record
 
                 if (self.overwrite_existing==False) and (self.does_exist(file_path, subject_number, record_name) == True):
@@ -414,7 +419,8 @@ class BaseDataset(ABC):
                     subject_number,
                     record_name,
                     x, 
-                    y
+                    y,
+                    self.meta
                 )
 
                 self.subject_context = None
