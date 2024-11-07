@@ -335,7 +335,11 @@ class BaseDataset(ABC):
                 subsubgrp_psg.create_dataset(channel_name, data=channel_data)
             
             subgrp_record.create_dataset("hypnogram", data=y)
-            subgrp_record.create_dataset("meta", data=meta)
+
+            metagroup = subgrp_record.create_group("meta")
+
+            for k in self.meta.keys():
+                metagroup.create_dataset(k, data=self.meta[k])
 
             self.log_info('Successfully wrote record to hdf5 file')
     
