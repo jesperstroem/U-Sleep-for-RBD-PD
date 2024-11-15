@@ -37,7 +37,8 @@ class USleep_Lightning(Base_Lightning):
                          lr_factor,
                          lr_minimum,
                          loss_weights)
-
+        
+        self.prediction_resolution = 3840
         self.initial_filters = initial_filters
         self.complexity_factor = complexity_factor
         self.progression_factor = progression_factor
@@ -93,9 +94,8 @@ class USleep_Lightning(Base_Lightning):
         
         assert eegshape[2] == eogshape[2]
 
-        output_dens_3840 = {}
-        output_dens_384 = {}
-        output_dens_1 = {}
+        resolution = self.prediction_resolution
+        output = {}
 
         for i in range(num_eegs):
             for p in range(num_eogs):
@@ -108,24 +108,18 @@ class USleep_Lightning(Base_Lightning):
                 
                 x_temp = torch.cat([x_eeg, x_eog], dim=1)
                 
-                y_3840 = self.get_preds(x_temp, 3840)
-                y_384 = self.get_preds(x_temp, 384)
-                y_1 = self.get_preds(x_temp, 1)
+                y_pred = self.get_preds(x_temp, resolution)
 
                 eeg_tag = tags["eeg"][i]
                 eog_tag = tags["eog"][p]
 
-                output_dens_3840[f"{eeg_tag}/{eog_tag}"] = y_3840
-                output_dens_384[f"{eeg_tag}/{eog_tag}"] = y_384
-                output_dens_1[f"{eeg_tag}/{eog_tag}"] = y_1
+                output[f"{eeg_tag}/{eog_tag}"] = y_pred
                 
         log_test_step(self.output_folder_prefix,
                       dataset=tags["dataset"],
                       subject=tags["subject"],
                       record=tags["record"],
-                      output_dens_3840=output_dens_3840,
-                      output_dens_384=output_dens_384,
-                      output_dens_1=output_dens_1,
+                      output=output,
                       labels=ybatch.to("cpu"))
     
     def prep_batch(self, x_eeg, x_eog):
