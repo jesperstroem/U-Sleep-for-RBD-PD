@@ -17,6 +17,7 @@ class USleep_Lightning(Base_Lightning):
         initial_filters = 5,
         complexity_factor = 1.67,
         progression_factor = 2,
+        depth = 12,
         lr_patience = 50,
         lr_factor = 0.5,
         lr_minimum = 0.0000001,
@@ -28,7 +29,8 @@ class USleep_Lightning(Base_Lightning):
         inner = USleep(num_channels=num_channels,
                        initial_filters=initial_filters,
                        complexity_factor=complexity_factor,
-                       progression_factor=progression_factor)
+                       progression_factor=progression_factor,
+                       depth=depth)
         
         super().__init__(inner,
                          lr, 
@@ -42,6 +44,7 @@ class USleep_Lightning(Base_Lightning):
         self.initial_filters = initial_filters
         self.complexity_factor = complexity_factor
         self.progression_factor = progression_factor
+        self.depth = depth
         self.include_eog = include_eog
         self.num_channels = num_channels
 

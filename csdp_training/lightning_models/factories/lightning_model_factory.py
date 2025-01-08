@@ -25,6 +25,7 @@ class USleep_Factory(IModel_Factory):
                  initial_filters,
                  complexity_factor,
                  progression_factor,
+                 depth,
                  lr_patience = 50,
                  lr_factor = 0.5,
                  lr_minimum = 1e-7,
@@ -32,6 +33,7 @@ class USleep_Factory(IModel_Factory):
                  loss_weights = None,
                  ):
         self.lr = lr
+        self.depth = depth
         self.lr_patience = lr_patience
         self.lr_factor = lr_factor
         self.lr_minimum = lr_minimum
@@ -48,6 +50,7 @@ class USleep_Factory(IModel_Factory):
                                self.initial_filters,
                                self.complexity_factor,
                                self.progression_factor,
+                               self.depth,
                                self.lr_patience,
                                self.lr_factor,
                                self.lr_minimum,
