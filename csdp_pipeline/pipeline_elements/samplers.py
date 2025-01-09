@@ -50,14 +50,13 @@ class Random_Sampler(ISampler):
                  split_data: Split,
                  split_type: str, 
                  num_epochs: int, 
-                 num_iterations: int,
-                 pick_function = None):
+                 num_iterations: int):
         assert split_type == "train"
 
-        if pick_function == None:
-            self.pick_function = self.__pick_random_EEG_and_EOG
-        else:
-            self.pick_function = pick_function
+        #if pick_function == None:
+        #self.pick_function = self.__pick_random_EEG_and_EOG
+        #else:
+        #    self.pick_function = pick_function
 
         #Remove splits if they do not have training
         #split_data.dataset_splits = filter(lambda x: len(x.train) > 0, split_data.dataset_splits)
@@ -146,12 +145,12 @@ class Random_Sampler(ISampler):
             psg = list(hdf5[r_subject][r_record]["psg"].keys())
 
             try:
-                eegs, eogs = self.pick_function(psg)
+                eeg, eog = self.__pick_random_EEG_and_EOG(psg)
             except:
                 print(f"Could not pick eeg or eog from dataset {r_dataset}, subject: {r_subject}, record: {r_record}")
                 return None
             
-            if len(eegs) == 0 and len(eogs) == 0:
+            if eeg == None and eog == None:
                 print(f"No EEG or EOG available. Available channels: {psg} from {r_subject}, {r_record}")
                 return None
 
@@ -184,20 +183,27 @@ class Random_Sampler(ISampler):
             eeg_segments = []
             eog_segments = []
 
-            for eeg in eegs:
-                try:
-                    eeg_segment = hdf5[r_subject][r_record]["psg"][eeg][x_start_index:x_start_index+(self.epoch_length*30*128)]
-                except:
-                    eeg_segment = []
-                eeg_segments.append(eeg_segment)
+            try:
+                eeg_segment = hdf5[r_subject][r_record]["psg"][eeg][x_start_index:x_start_index+(self.epoch_length*30*128)]
+            except:
+                eeg_segment = []
 
-            for eog in eogs:
-                try:
-                    eog_segment = hdf5[r_subject][r_record]["psg"][eog][x_start_index:x_start_index+(self.epoch_length*30*128)]
-                except:
-                    eog_segment = []
+            if len(eeg_segment) == 0:
+                print(f"No EEG in record {r_dataset, r_subject, r_subject}")
+                return None
 
-                eog_segments.append(eog_segment)
+            eeg_segments.append(eeg_segment)
+
+            try:
+                eog_segment = hdf5[r_subject][r_record]["psg"][eog][x_start_index:x_start_index+(self.epoch_length*30*128)]
+            except:
+                eog_segment = []
+
+            if len(eog_segment) == 0:
+                print(f"No EOG in record {r_dataset, r_subject, r_subject} - copying EEG")
+                eog_segment = eeg_segment
+            
+            eog_segments.append(eog_segment)
 
         eeg_segments = np.array(eeg_segments)
         eog_segments = np.array(eog_segments)
@@ -223,14 +229,14 @@ class Random_Sampler(ISampler):
         eeg_channels, eog_channels = filter_channels(channel_list)
 
         if len(eeg_channels) > 0:
-            r_eeg = np.random.choice(eeg_channels, 1)
+            r_eeg = np.random.choice(eeg_channels, 1)[0]
         else:
-            r_eeg = []
+            r_eeg = None
 
         if len(eog_channels) > 0:
-            r_eog = np.random.choice(eog_channels, 1)
+            r_eog = np.random.choice(eog_channels, 1)[0]
         else:
-            r_eog = []
+            r_eog = None
             
         return r_eeg, r_eog
 
