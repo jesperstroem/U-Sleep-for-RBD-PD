@@ -8,6 +8,7 @@ from ml_architectures.usleep.usleep import USleep
 import pytorch_lightning as pl
 import os
 import torch.nn as nn
+from timeit import default_timer as timer
 
 class USleep_Lightning(Base_Lightning):
     def __init__(
@@ -100,6 +101,10 @@ class USleep_Lightning(Base_Lightning):
         resolution = self.prediction_resolution
         output = {}
 
+        x = None
+
+        channel_combs = []
+
         for i in range(num_eegs):
             for p in range(num_eogs):
  
@@ -110,19 +115,30 @@ class USleep_Lightning(Base_Lightning):
                 x_eog = torch.unsqueeze(x_eog, 1)
                 
                 x_temp = torch.cat([x_eeg, x_eog], dim=1)
-                
-                y_pred = self.get_preds(x_temp, resolution)
+
+                if x != None:
+                    x = torch.cat([x, x_temp], dim=0)
+                else:
+                    x = x_temp
 
                 eeg_tag = tags["eeg"][i]
                 eog_tag = tags["eog"][p]
 
-                output[f"{eeg_tag}/{eog_tag}"] = y_pred
+                channel_combs.append((eeg_tag, eog_tag))
+
+        start = timer()
+        y_pred = self.get_preds(x, resolution)
+        end = timer()
+        
+        output["votes"] = y_pred
                 
         log_test_step(self.output_folder_prefix,
                       dataset=tags["dataset"],
                       subject=tags["subject"],
                       record=tags["record"],
                       output=output,
+                      channel_combs = channel_combs,
+                      prediction_time=end-start,
                       labels=ybatch.to("cpu"))
     
     def prep_batch(self, x_eeg, x_eog):
