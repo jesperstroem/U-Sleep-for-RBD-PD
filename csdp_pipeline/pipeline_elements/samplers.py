@@ -200,7 +200,7 @@ class Random_Sampler(ISampler):
                 eog_segment = []
 
             if len(eog_segment) == 0:
-                print(f"No EOG in record {r_dataset, r_subject, r_subject} - copying EEG")
+                #print(f"No EOG in record {r_dataset, r_subject, r_subject} - copying EEG")
                 eog_segment = eeg_segment
             
             eog_segments.append(eog_segment)
