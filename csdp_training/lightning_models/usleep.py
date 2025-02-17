@@ -1,5 +1,10 @@
+'''Usleep wrapped in lightning module, based on a base class'''
+
+
 # Code inspired by U-Sleep article
 # and https://github.com/neergaard/utime-pytorch
+
+#pylint: disable=missing-function-docstring,invalid-name
 
 import torch
 from csdp_training.lightning_models.base import Base_Lightning
@@ -11,6 +16,18 @@ import torch.nn as nn
 from timeit import default_timer as timer
 
 class USleep_Lightning(Base_Lightning):
+    """lightning wrapper for the usleep network class
+
+    Forward pass expects the following output:
+    x_eeg: torch.Tensor
+        EEG signal
+    x_eog: torch.Tensor
+        EOG signal
+    ybatch: torch.Tensor
+        target labels
+    tags: list
+        ID tags for a given set of epochs, to make it easier to identify the results (mostly for debugging purposes)
+    """
     def __init__(
         self,
         lr,
@@ -25,7 +42,7 @@ class USleep_Lightning(Base_Lightning):
         loss_weights = None,
         include_eog = True,
     ):
-        num_channels = 2 if include_eog == True else 1
+        num_channels = 2 if include_eog is True else 1
 
         inner = USleep(num_channels=num_channels,
                        initial_filters=initial_filters,
@@ -34,7 +51,7 @@ class USleep_Lightning(Base_Lightning):
                        depth=depth)
         
         super().__init__(inner,
-                         lr, 
+                         lr,
                          batch_size,
                          lr_patience,
                          lr_factor,
@@ -49,34 +66,34 @@ class USleep_Lightning(Base_Lightning):
         self.include_eog = include_eog
         self.num_channels = num_channels
 
-    def channels_prediction_EEGONLY(self, x_eegs, ybatch, tags):
-        eegshape = x_eegs.shape
-        
-        num_eegs = eegshape[1]
+    # def channels_prediction_EEGONLY(self, x_eegs, ybatch, tags):
+    #     eegshape = x_eegs.shape
 
-        all_preds = {}
+    #     num_eegs = eegshape[1]
 
-        for i in range(num_eegs):
-            x_eeg = x_eegs[:,i,...]
+    #     all_preds = {}
 
-            x_eeg = torch.unsqueeze(x_eeg, 1)
+    #     for i in range(num_eegs):
+    #         x_eeg = x_eegs[:,i,...]
 
-            pred = self(x_eeg)
-            pred = torch.nn.functional.softmax(pred, dim=1)
-            pred = torch.squeeze(pred)
-            pred = pred.swapaxes(0,1)
-            pred = pred.to("cpu")
+    #         x_eeg = torch.unsqueeze(x_eeg, 1)
 
-            eeg_tag = tags["eeg"][i]
+    #         pred = self(x_eeg)
+    #         pred = torch.nn.functional.softmax(pred, dim=1)
+    #         pred = torch.squeeze(pred)
+    #         pred = pred.swapaxes(0,1)
+    #         pred = pred.to("cpu")
 
-            all_preds[f"{eeg_tag}"] = pred
+    #         eeg_tag = tags["eeg"][i]
+
+    #         all_preds[f"{eeg_tag}"] = pred
                 
-        log_test_step(f"{self.output_folder_prefix}", 
-                      dataset=tags["dataset"],
-                      subject=tags["subject"],
-                      record=tags["record"],
-                      preds=all_preds,
-                      labels=ybatch.to("cpu"))
+    #     log_test_step(f"{self.output_folder_prefix}", 
+    #                   dataset=tags["dataset"],
+    #                   subject=tags["subject"],
+    #                   record=tags["record"],
+    #                   preds=all_preds,
+    #                   labels=ybatch.to("cpu"))
     
     def get_preds(self, x, resolution):
         self.model.classifier.avgpool = nn.AvgPool1d(resolution)
@@ -92,10 +109,10 @@ class USleep_Lightning(Base_Lightning):
     def channels_prediction(self, x_eegs, x_eogs, ybatch, tags):
         eegshape = x_eegs.shape
         eogshape = x_eogs.shape
-        
+
         num_eegs = eegshape[1]
         num_eogs = eogshape[1]
-        
+
         assert eegshape[2] == eogshape[2]
 
         resolution = self.prediction_resolution
@@ -107,13 +124,13 @@ class USleep_Lightning(Base_Lightning):
 
         for i in range(num_eegs):
             for p in range(num_eogs):
- 
+
                 x_eeg = x_eegs[:,i,...]
                 x_eog = x_eogs[:,p,...]
 
                 x_eeg = torch.unsqueeze(x_eeg, 1)
                 x_eog = torch.unsqueeze(x_eog, 1)
-                
+
                 x_temp = torch.cat([x_eeg, x_eog], dim=1)
 
                 if x != None:
@@ -163,7 +180,7 @@ class USleep_Lightning(Base_Lightning):
         xbatch = self.prep_batch(x_eeg, x_eog)
 
         pred = self(xbatch)
-        
+
         step_loss, _, _, _ = self.compute_train_metrics(pred, ybatch)
 
         self.training_step_outputs.append(step_loss)
@@ -171,6 +188,9 @@ class USleep_Lightning(Base_Lightning):
         return step_loss
 
     def validation_step(self, batch: dict, _):
+        #make sure  a single record was passed (no batching):
+        assert batch[0].shape[0] == 1
+        
         # Step per record
         x_eeg = batch["eeg"]
         x_eog = batch["eog"]
@@ -179,10 +199,18 @@ class USleep_Lightning(Base_Lightning):
         xbatch = self.prep_batch(x_eeg, x_eog)
         
         pred = self(xbatch)
-        
+
         step_loss, step_acc, step_kap, step_f1 = self.compute_train_metrics(pred, ybatch)
 
-        assert (step_acc != None) and (step_kap != None) and (step_f1 != None)
+        assert (step_acc is not None) and (step_kap is not None) and (step_f1 is not None)
+
+        #detach metrics from graph and move to cpu:
+        step_loss = step_loss.cpu().detach()
+        step_acc = step_acc.cpu().detach()
+        step_kap = step_kap.cpu().detach()
+        step_f1 = step_f1.cpu().detach()
+        pred = pred.cpu().detach()
+        ybatch = ybatch.cpu().detach()
 
         self.validation_step_loss.append(step_loss)
         self.validation_step_acc.append(step_acc)
@@ -193,7 +221,7 @@ class USleep_Lightning(Base_Lightning):
         pred = torch.reshape(pred, (-1, 5))
         pred = torch.argmax(pred, dim=1)
         ybatch = torch.flatten(ybatch)
-        
+
         self.validation_labels.append(ybatch)
         self.validation_preds.append(pred)
 
@@ -213,7 +241,7 @@ class USleep_Lightning(Base_Lightning):
         else:
             _ = trainer.test(self, loader)
 
-    def test_step(self, batch: dict, _):
+    def test_step(self, batch, _):
         # Step per record
         x_eeg: torch.Tensor = batch["eeg"]
         x_eog: torch.Tensor = batch["eog"]
@@ -221,10 +249,12 @@ class USleep_Lightning(Base_Lightning):
         tags: dict = batch["tag"]
 
         assert len(x_eeg.shape) == 3
+
         ybatch = torch.flatten(ybatch)
         
         if self.include_eog == True:
             assert len(x_eog.shape) == 3
-            self.channels_prediction(x_eeg, x_eog, ybatch, tags)
+            self.channels_prediction_double(x_eeg, x_eog, ybatch, tags)
         else:
-            channels_pred: torch.Tensor = self.channels_prediction_EEGONLY(x_eeg, ybatch, tags)
+            self.channels_prediction_single(x_eeg, ybatch, tags)
+

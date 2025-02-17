@@ -19,6 +19,21 @@ class IModel_Factory(ABC):
         pass
 
 class USleep_Factory(IModel_Factory):
+    '''Factory class for USleep model:
+
+    Constructor arguments:
+    - lr: learning rate
+    - batch_size: batch size
+    - initial_filters: number of filters in the first layer
+    - complexity_factor: factor by which the number of filters is increased in each layer
+    - progression_factor: factor by which the number of filters is increased in each block
+    - lr_patience: number of epochs without improvement before reducing the learning rate (default: 50)
+    - lr_factor: factor by which the learning rate is reduced (default: 0.5)
+    - lr_minimum: minimum learning rate (default: 1e-7)
+    - include_eog: whether to include EOG channels in the input (default: True)
+    - loss_weights: weights for the different loss terms (default: None)
+    '''
+
     def __init__(self,
                  lr,
                  batch_size,
@@ -32,6 +47,7 @@ class USleep_Factory(IModel_Factory):
                  include_eog = True,
                  loss_weights = None,
                  ):
+        '''init string'''
         self.lr = lr
         self.depth = depth
         self.lr_patience = lr_patience

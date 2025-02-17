@@ -430,6 +430,6 @@ class BaseDataset(ABC):
                 self.subject_context = None
                 self.record_context = None
         
-        self.save_dataset_metadata()
+        #self.save_dataset_metadata()
         self.log_info('Successfully ported dataset')
         self.logger.final(self.dataset_name())
