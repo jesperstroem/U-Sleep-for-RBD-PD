@@ -12,16 +12,14 @@ To install the pipeline, follow these steps:
 
 1) Make sure that you have Conda installed: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 
-2) Create a new conda environment and activate it:
+2) Create a new conda environment and activate it. You CAN use an existing Conda environment, but keep in mind that your existing packages may change version - so decide for yourself if you care about that.
 
 ```console
 conda create -n <your_environment_name> python=3.10
 activate <your_environment_name>
 ```
 
-You CAN use an existing Conda environment, but keep in mind that various dependencies will be changed, so only do so with caution.
-
-3) Install PyTorch version 2.0.1 (I will update this dependency in the near future, but for now it works with 2.0.1).
+3) Install PyTorch version 2.0.1:
 If you have a CUDA enabled GPU, run the following:
 
 ```console
@@ -49,12 +47,11 @@ python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/ml_architectures.git
 python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/sleep-code/common-sleep-data-pipeline.git@main
 ```
 
-
 ## Preprocessing
-This submodule contains classes that can take known datasets and transform them into HDF5 files, which are used by the csdp_pipeline submodule.
-There is an existing datastore available at ERDA: NTData/Big_Sleep_Set/pt_processed/v2, so that you don't need to run this step yourself.
+This submodule contains classes that can take known public datasets and transform them into standardized HDF5 files, which are used by the csdp_pipeline submodule.
+There is an existing database of HDF5 files available at ERDA: NTData/Big_Sleep_Set/pt_processed/v2 - if you plan to use this, you do not need to worry about this submodule.
 
-If you wish to run the preprocessing yourself, you need to download all the raw data. Note that to download the data from https://sleepdata.org/, you need a personal download token from their website, and you need the NSRR ruby gem installed: https://github.com/nsrr/nsrr-gem. When downloaded, point to the location of the raw data. See example below.
+If you wish to run the preprocessing yourself, you need to download the raw data. Note that to download the data from https://sleepdata.org/, you need a personal download token from their website, and you need the NSRR ruby gem installed: https://github.com/nsrr/nsrr-gem. When downloaded, point to the location of the raw data. See example below.
 
 ```python
 
@@ -145,10 +142,11 @@ predictions = usleep_instance(batched_data.float())
 ## Dataloading and training of U-Sleep with PyTorch Lightning
 This submodule adds the use of a PyTorch Lightning module to train, finetune or predict with U-Sleep.
 
-The following example shows how to start training, validating and testing.
-It is entirely plausible to remove the training&validation step or the test step, depending on your needs.
+The following example shows how to train, validate and test.
+It is entirely possible to remove either the fitting step or the test step, depending on your needs.
 
 After training, model weights are saved into the "lighting_logs" folder.
+Test results are saved to a folder of your choice.
 
 ```python
 import torch
@@ -284,4 +282,5 @@ cv.run()
 ## Predicting on a single MNE compatible file
 If you have one or a few MNE compatible files (.edf, .set, etc.) that you need sleep-staged by U-Sleep, the following example code will do so:
 
+TODO
 
