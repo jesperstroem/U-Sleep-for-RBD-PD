@@ -14,7 +14,6 @@ import neptune
 from csdp_pipeline.pipeline_elements.models import Split, Dataset_Split
 from sklearn.model_selection import KFold
 import os
-import json
 
 class CV_Experiment:
 

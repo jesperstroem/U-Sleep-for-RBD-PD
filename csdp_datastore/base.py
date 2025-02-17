@@ -342,10 +342,6 @@ class BaseDataset(ABC):
                 metagroup.create_dataset(k, data=self.meta[k])
 
             self.log_info('Successfully wrote record to hdf5 file')
-    
-    def download(self):
-        self.log_warning('Download function was called, but no download functionality has been implemented')
-        pass
 
     def does_exist(self, file_path, subject_number, record_number) -> bool:
         file_exists = os.path.exists(file_path)
