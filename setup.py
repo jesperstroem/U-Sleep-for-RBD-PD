@@ -20,7 +20,6 @@ setup(
     ],
     install_requires=["h5py==3.10.0", 
                       "mne==1.4.2",
-                      "lightning==2.1.3",
                       "pandas==2.1.4", 
                       "pyarrow==14.0.2",
                       "scipy==1.11.4", 

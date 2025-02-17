@@ -33,11 +33,19 @@ If not, then you will be running on CPU and you should type the following:
 conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 cpuonly -c pytorch
 ```
 
-4) Install the dependency PyTorch package ML Architectures
+4) Install PyTorch Lightning
+python -m pip install lightning==2.1.3 torch==2.0.1
 
+5) Install the dependency PyTorch package ML Architectures
 ```console
 python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/ml_architectures.git@main
 ```
+
+6) Install this repository as a package:
+```console
+python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/sleep-code/common-sleep-data-pipeline.git@main
+```
+
 
 ## csdp_datastore
 
