@@ -17,12 +17,6 @@ setup(
         "csdp_training.lightning_models",
         "csdp_training.lightning_models.factories",
         "csdp_datastore",
-        "csdp_datastore.dod",
-        "csdp_datastore.isruc",
-        "csdp_datastore.mass",
-        "csdp_datastore.sdo",
-        "csdp_datastore.sedf",
-        "csdp_datastore.eesm"
     ],
     install_requires=["numpy~=1.26.2",
                       "scipy~=1.11.4", 
