@@ -26,5 +26,6 @@ setup(
                       "setuptools==68.2.2",
                       "scikit_learn==1.3.2",
                       "neptune==1.13.0",
+                      "mne-bids==0.13",
                       "wfdb==4.1.2"],
 )
