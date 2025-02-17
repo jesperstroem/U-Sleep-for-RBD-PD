@@ -36,6 +36,14 @@ class Split():
     @classmethod
     def file(cls,
              split_file_path):
+        """Function to create a split object from an existing split .json file.
+
+        Args:
+            split_file_path (string): Exact filepath to an existing split file.
+
+        Returns:
+            Split: A split object defined by the given split file
+        """
 
         dataset_splits = []
 
@@ -66,6 +74,17 @@ class Split():
                           training_hdf5_path,
                           test_hdf5_path,
                           split_name="train_and_holdout"):
+        """Function to create a split object based on two HDF5 datasets, where one is the training set, and the other is the hold-out testset
+
+        Args:
+            base_data_path (string): Base-path to the HDF5 data files
+            training_hdf5_path (string): Exact filepath to the training HDF5 file
+            test_hdf5_path (string): Exact filepath to the hold-out test HDF5 file
+            split_name (str, optional): Name of the split. Defaults to "train_and_holdout".
+
+        Returns:
+            Split: A split object
+        """
         dataset_splits: list[Dataset_Split] = []
         
         train_path = f"{base_data_path}/{training_hdf5_path}"
@@ -98,6 +117,15 @@ class Split():
     def full_test(cls,
                   base_hdf5_path,
                   split_name="full_test"):
+        """Function to create a split, where all subjects are used for testing
+
+        Args:
+            base_hdf5_path (string): Base-path to the HDF5 files
+            split_name (str, optional): Name of the split. Defaults to "full_test".
+
+        Returns:
+            Split: A split object
+        """
         hdf5_paths = os.listdir(base_hdf5_path)
         hdf5_paths = [f"{base_hdf5_path}/{path}" for path in hdf5_paths]
 
@@ -124,6 +152,16 @@ class Split():
                base_hdf5_path,
                split_name = "random",
                split_percentages = (0.8, 0.1, 0.1)):
+        """Function to create a random split from HDF5 data files
+
+        Args:
+            base_hdf5_path (string): Base-path to the HDF5 files
+            split_name (str, optional): Name of the split. Defaults to "random".
+            split_percentages (tuple, optional): Subject-based percentages for the split. Defaults to (0.8, 0.1, 0.1).
+
+        Returns:
+            Split: A split object
+        """
         hdf5_paths = os.listdir(base_hdf5_path)
         hdf5_paths = [f"{base_hdf5_path}/{path}" for path in hdf5_paths]
 
@@ -147,10 +185,15 @@ class Split():
                    dataset_splits=dataset_splits, 
                    base_data_path=base_hdf5_path)
     
-    def dump_file(self, path, name):
+    def dump_file(self, path):
+        """Function to save a .json file of this split object. Can be used with Split.file(...) to reload the split object.
+
+        Args:
+            path (string): Directory to save the .json file
+        """
         dic = self.get_dict()
 
-        with open(f"{path}/{name}.json", "w") as outfile: 
+        with open(f"{path}/{self.id}.json", "w") as outfile: 
             json.dump(dic, outfile)
 
     def __init__(self,

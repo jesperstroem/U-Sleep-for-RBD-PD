@@ -28,7 +28,7 @@ class CV_Experiment:
                  logging_folder: str,
                  num_validation_subjects: int = 1,
                  batches_per_epoch: int = 100,
-                 pick_all_channels: [bool] = [False, False, False],
+                 pick_all_channels: [bool] = [False, False, True],
                  test_first: bool = False,
                  pipeline_configuration: PipelineConfiguration = PipelineConfiguration(),
                  continue_existing: bool = False,
@@ -65,7 +65,7 @@ class CV_Experiment:
         self.num_folds = num_folds
         self.num_validation_subjects = num_validation_subjects
 
-        os.mkdir(logging_folder)
+        os.makedirs(logging_folder, exist_ok=True)
 
         if split_filepath != None:
             splits = []
@@ -86,9 +86,7 @@ class CV_Experiment:
         self.test_first = test_first
         self.accelerator = "cuda" if torch.cuda.is_available() else "cpu"
 
-    def run_training(self):
-        cwd = os.getcwd()
-
+    def run(self):
         if self.test_first == True:
             global_split: Split = self.__create_global_split(self.dataset_paths)
 
@@ -187,7 +185,6 @@ class CV_Experiment:
                          batch_size):
         
         train_sampler = Random_Sampler(split,
-                                    split_type="train",
                                     num_epochs=35,
                                     num_iterations=batch_size*self.batches_per_epoch)
         
@@ -258,11 +255,11 @@ class CV_Experiment:
     
 
     def __save_split_data(self, splits: [Split], logging_folder):
-        os.makedirs(f"{logging_folder}/splits")
+        os.makedirs(f"{logging_folder}/splits", exist_ok=True)
 
         for _, split in enumerate(splits):
             split: Split = split
-            split.dump_file(path=f"{logging_folder}/splits", name=split.id)
+            split.dump_file(path=f"{logging_folder}/splits")
 
     def __create_global_split(self, dataset_filepaths: list[str]):
         split_data = Split(id="test",

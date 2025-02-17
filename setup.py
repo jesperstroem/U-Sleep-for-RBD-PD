@@ -23,6 +23,8 @@ setup(
                       "pandas==2.1.4", 
                       "pyarrow==14.0.2",
                       "scipy==1.11.4", 
-                      "setuptools==68.2.2", 
+                      "setuptools==68.2.2",
+                      "scikit_learn==1.3.2",
+                      "neptune==1.13.0",
                       "wfdb==4.1.2"],
 )

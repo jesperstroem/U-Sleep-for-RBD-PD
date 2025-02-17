@@ -66,7 +66,7 @@ class USleep_Lightning(Base_Lightning):
         self.include_eog = include_eog
         self.num_channels = num_channels
 
-    def channels_prediction_EEGONLY(self, x_eegs, ybatch, tags):
+    def channels_prediction_single(self, x_eegs, ybatch, tags):
         eegshape = x_eegs.shape
 
         num_eegs = eegshape[1]
@@ -106,7 +106,7 @@ class USleep_Lightning(Base_Lightning):
 
         return pred
 
-    def channels_prediction(self, x_eegs, x_eogs, ybatch, tags):
+    def channels_prediction_double(self, x_eegs, x_eogs, ybatch, tags):
         eegshape = x_eegs.shape
         eogshape = x_eogs.shape
 
@@ -188,9 +188,6 @@ class USleep_Lightning(Base_Lightning):
         return step_loss
 
     def validation_step(self, batch: dict, _):
-        #make sure  a single record was passed (no batching):
-        assert batch[0].shape[0] == 1
-        
         # Step per record
         x_eeg = batch["eeg"]
         x_eog = batch["eog"]

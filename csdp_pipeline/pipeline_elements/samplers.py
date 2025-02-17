@@ -48,10 +48,8 @@ class SamplerConfiguration:
 class Random_Sampler(ISampler):
     def __init__(self,
                  split_data: Split,
-                 split_type: str, 
                  num_epochs: int, 
                  num_iterations: int):
-        assert split_type == "train"
 
         #if pick_function == None:
         #self.pick_function = self.__pick_random_EEG_and_EOG
@@ -61,7 +59,7 @@ class Random_Sampler(ISampler):
         #Remove splits if they do not have training
         #split_data.dataset_splits = filter(lambda x: len(x.train) > 0, split_data.dataset_splits)
         
-        self.split_type = split_type
+        self.split_type = "train"
         self.split_datasets: list(Dataset_Split) = list(filter(lambda x: len(x.train) > 0, split_data.dataset_splits))
 
         self.num_records = self.__count_records()
@@ -274,6 +272,8 @@ class Determ_sampler(ISampler):
                  split_type: str,
                  subject_percentage: float = 1.0,
                  get_all_channels = False):
+        assert (split_type == "val") or (split_type=="test")
+
         self.split_type = split_type
         self.split_data = split_data
         self.subject_percentage = subject_percentage
@@ -287,11 +287,10 @@ class Determ_sampler(ISampler):
         sample: ISample = self.__get_sample(index)
 
         if any(dim == 0 for dim in sample.eog.shape):
-            print("Found no EOG channel, duplicating EEG instead")
+            print(f"Info: Sampled data for {self.split_type} had no EOG channel - duplicating EEG instead")
             sample.eog = sample.eeg
             sample.tag.eog = sample.tag.eeg
-            
-
+        
         return sample
     
     def print_report(self):
