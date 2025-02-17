@@ -19,7 +19,6 @@ setup(
         "csdp_datastore",
     ],
     install_requires=["numpy~=1.26.2",
-                      "torch~=2.0.1", 
                       "h5py~=3.10.0", 
                       "mne==1.4.2", 
                       "lightning~=2.1.3",
