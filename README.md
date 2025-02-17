@@ -50,7 +50,7 @@ python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/sleep-code/common-sl
 ```
 
 
-## csdp_datastore
+## Preprocessing
 This submodule contains classes that can take known datasets and transform them into HDF5 files, which are used by the csdp_pipeline submodule.
 There is an existing datastore available at ERDA: NTData/Big_Sleep_Set/pt_processed/v2, so that you don't need to run this step yourself.
 
@@ -71,7 +71,7 @@ a = ABC(dataset_path = raw_data_path,
 a.port_data()
 ```
 
-## csdp_pipeline
+## Using the dataloading pipeline without PyTorch Lightning
 This submodule contains the dataloading logic for the HDF5 files created by csdp_datastore.
 These are compatible with the V2 dataset from ERDA: NTData/Big_Sleep_Set/pt_processed/v2
 
@@ -142,7 +142,7 @@ usleep_instance = USleep()
 predictions = usleep_instance(batched_data.float())
 ```
 
-## csdp_training
+## Dataloading and training of U-Sleep with PyTorch Lightning
 This submodule adds the use of a PyTorch Lightning module to train, finetune or predict with U-Sleep.
 
 The following example shows how to start training, validating and testing.
@@ -282,3 +282,6 @@ cv.run()
 ```
 
 ## Predicting on a single MNE compatible file
+If you have one or a few MNE compatible files (.edf, .set, etc.) that you need sleep-staged by U-Sleep, the following example code will do so:
+
+
