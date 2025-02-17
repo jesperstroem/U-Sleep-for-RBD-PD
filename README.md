@@ -33,14 +33,13 @@ If not, then you will be running on CPU and you should type the following:
 conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 cpuonly -c pytorch
 ```
 
-4) Install the pipeline packages (ML Architectures and CSDP)
+4) Install the dependency PyTorch package ML Architectures
 
 ```console
-python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/ml_architectures.git
-python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/sleep-code/common-sleep-data-pipeline.git
+python -m pip install git+https://gitlab.au.dk/tech_ear-eeg/ml_architectures.git@main
 ```
 
-## Datastore
+## csdp_datastore
 
 Before you can use the dataloaders and lightning modules, you need to download and preprocess the raw data. Note that to download the data from https://sleepdata.org/, you need a personal download token from their website, and you need the NSRR ruby gem installed: https://github.com/nsrr/nsrr-gem. When downloaded, point to the location of the raw data. See example below.
 
@@ -60,7 +59,7 @@ a.port_data()
 
 ```
 
-## Pipeline
+## csdp_pipeline
 
 To use the implemented pytorch dataloaders, look at the following example
 
@@ -88,7 +87,7 @@ test_loader = dataloader_factory.create_testing_loader(num_workers=1)
 
 ```
 
-## Training
+## csdp_training
 
 To also use the implemented pytorch lightning versions of U-Sleep, see the following example.
 
