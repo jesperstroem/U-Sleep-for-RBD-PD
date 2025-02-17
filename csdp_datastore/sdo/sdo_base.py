@@ -15,7 +15,6 @@ class SleepdataOrg(BaseDataset):
         overwrite_existing = False,
         filter: bool = True,
         filtersettings = FilterSettings(),
-        download_token: str = None,
         max_num_subjects: int = None, 
         scale_and_clip: bool = True,
         output_sample_rate: int = 128,
@@ -35,8 +34,6 @@ class SleepdataOrg(BaseDataset):
                          data_format,
                          logging_path,
                          calculated_channel_config=calculated_channel_config)
-        
-        self.download_token = download_token
 
     """
     ABOUT THIS DATASET
@@ -61,27 +58,6 @@ class SleepdataOrg(BaseDataset):
     @abstractmethod
     def channel_mapping(self):
         pass
-
-    def download(self):
-        args = ["nsrr", "download", f"{self.download_name()}/polysomnography/annotations-events-profusion", f"--token={self.download_token}"]
-        
-        p1 = subprocess.Popen(args,
-                           stdout=subprocess.PIPE,
-                           cwd=self.dataset_path)
-        
-        args = ["nsrr", "download", f"{self.download_name()}/polysomnography/edfs", f"--token={self.download_token}"]
-        
-        p2 = subprocess.Popen(args,
-                           stdout=subprocess.PIPE,
-                           cwd=self.dataset_path)
-        
-        codes = [p.wait() for p in [p1, p2]]
-        
-        self.dataset_path = f"{self.dataset_path}/{self.download_name()}"
-        
-    @abstractmethod
-    def download_name(self):
-        return self.dataset_name()
 
     def dataset_name(self):
         return self.__class__.__name__.lower()

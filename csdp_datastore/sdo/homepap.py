@@ -3,9 +3,6 @@ from ..models import TTRef, Mapping
 
 class HOMEPAP(SleepdataOrg):
 
-    def download_name(self):
-        return "homepap"
-
     def channel_mapping(self):
         return {
             "E1": Mapping(TTRef.EL, TTRef.Fpz),

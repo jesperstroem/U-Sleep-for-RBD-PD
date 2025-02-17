@@ -66,34 +66,34 @@ class USleep_Lightning(Base_Lightning):
         self.include_eog = include_eog
         self.num_channels = num_channels
 
-    # def channels_prediction_EEGONLY(self, x_eegs, ybatch, tags):
-    #     eegshape = x_eegs.shape
+    def channels_prediction_EEGONLY(self, x_eegs, ybatch, tags):
+        eegshape = x_eegs.shape
 
-    #     num_eegs = eegshape[1]
+        num_eegs = eegshape[1]
 
-    #     all_preds = {}
+        all_preds = {}
 
-    #     for i in range(num_eegs):
-    #         x_eeg = x_eegs[:,i,...]
+        for i in range(num_eegs):
+            x_eeg = x_eegs[:,i,...]
 
-    #         x_eeg = torch.unsqueeze(x_eeg, 1)
+            x_eeg = torch.unsqueeze(x_eeg, 1)
 
-    #         pred = self(x_eeg)
-    #         pred = torch.nn.functional.softmax(pred, dim=1)
-    #         pred = torch.squeeze(pred)
-    #         pred = pred.swapaxes(0,1)
-    #         pred = pred.to("cpu")
+            pred = self(x_eeg)
+            pred = torch.nn.functional.softmax(pred, dim=1)
+            pred = torch.squeeze(pred)
+            pred = pred.swapaxes(0,1)
+            pred = pred.to("cpu")
 
-    #         eeg_tag = tags["eeg"][i]
+            eeg_tag = tags["eeg"][i]
 
-    #         all_preds[f"{eeg_tag}"] = pred
+            all_preds[f"{eeg_tag}"] = pred
                 
-    #     log_test_step(f"{self.output_folder_prefix}", 
-    #                   dataset=tags["dataset"],
-    #                   subject=tags["subject"],
-    #                   record=tags["record"],
-    #                   preds=all_preds,
-    #                   labels=ybatch.to("cpu"))
+        log_test_step(f"{self.output_folder_prefix}", 
+                      dataset=tags["dataset"],
+                      subject=tags["subject"],
+                      record=tags["record"],
+                      preds=all_preds,
+                      labels=ybatch.to("cpu"))
     
     def get_preds(self, x, resolution):
         self.model.classifier.avgpool = nn.AvgPool1d(resolution)

@@ -2,9 +2,6 @@ from .sdo_base import SleepdataOrg
 from ..models import TTRef, Mapping
 
 class MESA(SleepdataOrg):    
-
-    def download_name(self):
-        return "mesa"
     
     def channel_mapping(self):
         return {

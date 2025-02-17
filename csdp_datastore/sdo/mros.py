@@ -1,9 +1,7 @@
 from .sdo_base import SleepdataOrg
 from ..models import TTRef, Mapping
 
-class MROS(SleepdataOrg):    
-    def download_name(self):
-        return "mros"
+class MROS(SleepdataOrg):
 
     def channel_mapping(self):
         return {

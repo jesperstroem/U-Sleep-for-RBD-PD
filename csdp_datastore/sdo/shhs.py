@@ -2,8 +2,6 @@ from .sdo_base import SleepdataOrg
 from ..models import TTRef, Mapping
 
 class SHHS(SleepdataOrg):
-    def download_name(self):
-        return "shhs"
     
     def channel_mapping(self):
         return {

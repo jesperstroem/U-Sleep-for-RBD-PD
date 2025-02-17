@@ -16,9 +16,7 @@ pip install git+https://github.com/jesperstroem/CSDP.git
 
 ## Downloading and preprocessing
 
-Before you can use the dataloaders and lightning modules, you need to download and preprocess the raw data. So far, automatic download is only implemented for the datasets from https://sleepdata.org/. Note that to download the data from https://sleepdata.org/, you need a personal download token from their website, and you need the NSRR ruby gem installed: https://github.com/nsrr/nsrr-gem.
-
-For the others, you need to download it yourself first and point to the location of the raw data. See below example.
+Before you can use the dataloaders and lightning modules, you need to download and preprocess the raw data. Note that to download the data from https://sleepdata.org/, you need a personal download token from their website, and you need the NSRR ruby gem installed: https://github.com/nsrr/nsrr-gem. When downloaded, point to the location of the raw data. See example below.
 
 ```python
 
@@ -26,15 +24,10 @@ from csdp_datastore import ABC
 
 raw_data_path = "/path/to/raw/data/location"
 output_data_path = "/path/to/output/data/file"
-download_token = "<token to download datasets from Sleepdata.org>"
 
 a = ABC(dataset_path = raw_data_path,
         output_path = output_data_path,
-        output_sample_rate = 128,
-        download_token = download_token)
-
-# This call can be omitted, if you already downloaded the data
-a.download()
+        output_sample_rate = 128)
 
 # This call starts the preprocessing
 a.port_data()

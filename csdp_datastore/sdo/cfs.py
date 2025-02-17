@@ -4,9 +4,6 @@ from ..models import TTRef, Mapping
 # Does not work at the moment because of different samplerates across records.
 
 class CFS(SleepdataOrg):
-    def download_name(self):
-        return "cfs"
-
     def channel_mapping(self):
         return {
             "C3": Mapping(TTRef.C3, TTRef.Fpz),
