@@ -65,48 +65,40 @@ class USleep_Lightning(Base_Lightning):
         self.depth = depth
         self.include_eog = include_eog
         self.num_channels = num_channels
-
-    def channels_prediction_single(self, x_eegs, ybatch, tags):
-        eegshape = x_eegs.shape
-
-        num_eegs = eegshape[1]
-
-        all_preds = {}
-
-        for i in range(num_eegs):
-            x_eeg = x_eegs[:,i,...]
-
-            x_eeg = torch.unsqueeze(x_eeg, 1)
-
-            pred = self(x_eeg)
-            pred = torch.nn.functional.softmax(pred, dim=1)
-            pred = torch.squeeze(pred)
-            pred = pred.swapaxes(0,1)
-            pred = pred.to("cpu")
-
-            eeg_tag = tags["eeg"][i]
-
-            all_preds[f"{eeg_tag}"] = pred
-                
-        log_test_step(f"{self.output_folder_prefix}", 
-                      dataset=tags["dataset"],
-                      subject=tags["subject"],
-                      record=tags["record"],
-                      preds=all_preds,
-                      labels=ybatch.to("cpu"))
     
     def get_preds(self, x, resolution):
         self.model.classifier.avgpool = nn.AvgPool1d(resolution)
 
         pred = self(x)
         pred = torch.nn.functional.softmax(pred, dim=1)
-        pred = torch.squeeze(pred)
-        pred = pred.swapaxes(0,1)
         pred = pred.to("cpu")
 
         return pred
+    
+    def __single_channels_prediction__(self, x_eegs, tags=None):
+        eegshape = x_eegs.shape
 
-    def channels_prediction_double(self, x_eegs, x_eogs, ybatch, tags):
+        num_eegs = eegshape[1]
+
+        output = {}
+
+        for i in range(num_eegs):
+            x_eeg = x_eegs[:,i,...]
+
+            x_eeg = torch.unsqueeze(x_eeg, 1)
+            
+            y_pred = self.get_preds(x_eeg, resolution = self.prediction_resolution)
+
+            if tags != None:
+                eeg_tag = tags["eeg"][i]
+            else:
+                eeg_tag = i
+
+            output[f"{eeg_tag}"] = y_pred
+
+        return output
+
+    def __two_channels_prediction__(self, x_eegs, x_eogs, tags=None):
         eegshape = x_eegs.shape
         eogshape = x_eogs.shape
 
@@ -115,12 +107,7 @@ class USleep_Lightning(Base_Lightning):
 
         assert eegshape[2] == eogshape[2]
 
-        resolution = self.prediction_resolution
         output = {}
-
-        x = None
-
-        channel_combs = []
 
         for i in range(num_eegs):
             for p in range(num_eogs):
@@ -133,30 +120,38 @@ class USleep_Lightning(Base_Lightning):
 
                 x_temp = torch.cat([x_eeg, x_eog], dim=1)
 
-                if x != None:
-                    x = torch.cat([x, x_temp], dim=0)
+                y_pred = self.get_preds(x_temp, self.prediction_resolution)
+
+                if tags != None:
+                    eeg_tag = tags["eeg"][i]
+                    eog_tag = tags["eog"][p]
                 else:
-                    x = x_temp
+                    eeg_tag = i
+                    eog_tag = p
 
-                eeg_tag = tags["eeg"][i]
-                eog_tag = tags["eog"][p]
+                output[f"{eeg_tag}/{eog_tag}"] = y_pred
 
-                channel_combs.append((eeg_tag, eog_tag))
+        return output
 
-        start = timer()
-        y_pred = self.get_preds(x, resolution)
-        end = timer()
-        
-        output["votes"] = y_pred
-                
-        log_test_step(self.output_folder_prefix,
-                      dataset=tags["dataset"],
-                      subject=tags["subject"],
-                      record=tags["record"],
-                      output=output,
-                      channel_combs = channel_combs,
-                      prediction_time=end-start,
-                      labels=ybatch.to("cpu"))
+
+    def __perform_predictions__(self, x_eegs, x_eogs=None, tags=None):
+        output = {}
+
+        if x_eogs != None:
+            assert x_eogs.shape[0] == 1
+            output = self.__two_channels_prediction__(x_eegs, x_eogs, tags)
+        else:
+            output = self.__single_channels_prediction__(x_eegs, tags)
+
+        return output
+    
+    def majority_vote_prediction(self, x_eegs, x_eogs = None, tags = None):
+        with torch.no_grad():
+            assert x_eegs.shape[0] == 1
+
+            output = self.__perform_predictions__(x_eegs, x_eogs, tags)
+
+        return output
     
     def prep_batch(self, x_eeg, x_eog):
 
@@ -249,9 +244,17 @@ class USleep_Lightning(Base_Lightning):
 
         ybatch = torch.flatten(ybatch)
         
-        if self.include_eog == True:
-            assert len(x_eog.shape) == 3
-            self.channels_prediction_double(x_eeg, x_eog, ybatch, tags)
+        if self.include_eog == False:
+            x_eog = None
         else:
-            self.channels_prediction_single(x_eeg, ybatch, tags)
+            assert len(x_eog.shape) == 3
+        
+        output = self.majority_vote_prediction(x_eeg, x_eog, tags)
+
+        log_test_step(self.output_folder_prefix,
+                      dataset=tags["dataset"],
+                      subject=tags["subject"],
+                      record=tags["record"],
+                      output=output,
+                      labels=ybatch.to("cpu"))
 

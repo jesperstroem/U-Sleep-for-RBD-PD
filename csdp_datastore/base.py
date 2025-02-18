@@ -1,15 +1,13 @@
 import os
 from abc import ABC, abstractmethod
-from scipy.signal import resample_poly
-from sklearn.preprocessing import RobustScaler
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pathlib import Path
 from h5py import File
 from .logger import LoggingModule, EventSeverity
-from scipy import signal
 from .models import FilterSettings, ChannelCalculations, Labels, Mapping
+from ..csdp_pipeline.preprocessing.usleep_prep_steps import scale_channel, filter_channel, remove_dc, resample_channel, clip_channel
 
 class BaseDataset(ABC):
     def __init__(
@@ -144,15 +142,6 @@ class BaseDataset(ABC):
                 for file_path in [psg, hyp]:
                     assert os.path.exists(file_path), f"Datapath: {file_path} was not found"
         
-    def filter_channel(self, channel, fs):
-        order = self.filtersettings.order
-        cutoffs = self.filtersettings.cutoffs
-        type = self.filtersettings.type
-
-        sos = signal.butter(order, cutoffs, btype=type, fs=fs, output="sos")
-        channel = signal.sosfiltfilt(sos, channel)
-        return channel
-    
     def add_calculated_channels(self, data):
         config = self.calculated_channel_config
 
@@ -177,11 +166,6 @@ class BaseDataset(ABC):
         
         return new_data
 
-    def remove_dc(self, data):
-        mean = np.mean(data)
-        data = np.subtract(data, mean)
-        return data
-
     def __map_channels(self, dic, y_len):
         new_dict = dict()
 
@@ -199,11 +183,11 @@ class BaseDataset(ABC):
             
             assert len(data) == y_len*sample_rate*30, "Length of data does not match the length of labels"
             
-            data = self.remove_dc(data)
+            data = remove_dc(data)
 
-            data = self.resample_channel(data,
-                                         output_rate=self.output_sample_rate,
-                                         source_sample_rate=sample_rate)
+            data = resample_channel(data,
+                                    output_rate=self.output_sample_rate,
+                                    source_sample_rate=sample_rate)
             
             new_dict[new_key] = data
 
@@ -222,11 +206,11 @@ class BaseDataset(ABC):
                 continue
 
             if self.filter:
-                data = self.filter_channel(data, self.output_sample_rate)
+                data = filter_channel(data, self.output_sample_rate, self.filtersettings)
 
             if self.scale_and_clip:
-                data = self.scale_channel(data)
-                data = self.clip_channel(data)
+                data = scale_channel(data)
+                data = clip_channel(data)
 
             new_dict[key] = data
             
@@ -235,44 +219,6 @@ class BaseDataset(ABC):
     
     def __map_labels(self, labels):
         return list(map(lambda x: self.label_mapping()[x], labels))
-    
-    def clip_channel(self, chnl, min_max_times_global_iqr = 20):
-        #https://github.com/perslev/psg-utils/blob/main/psg_utils/preprocessing/quality_control_funcs.py
-        iqr = np.subtract(*np.percentile(chnl, [75, 25]))
-        
-        threshold = iqr * min_max_times_global_iqr
-
-        clipped = np.clip(chnl, -threshold, threshold)
-        
-        return clipped
-    
-    def scale_channel(self, chnl):
-        #https://github.com/perslev/psg-utils/blob/main/psg_utils/preprocessing/scaling.py
-        chnl = np.reshape(chnl, (-1,1))
-
-        assert len(chnl.shape) == 2 and chnl.shape[1] == 1
-
-        transformer = RobustScaler().fit(chnl)
-        
-        scaled = transformer.transform(chnl).flatten()
-        
-        assert len(scaled.shape) == 1
-        
-        return scaled
-    
-    def resample_channel(self, channel, output_rate, source_sample_rate):
-        """
-        Function to resample a single data channel to the desired sample rate.
-        """
-
-        channel_resampled = resample_poly(
-            channel,
-            output_rate,
-            source_sample_rate,
-            axis=0
-        )
-
-        return channel_resampled
     
     def save_dataset_metadata(self):
         filtering_used = self.filter
