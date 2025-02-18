@@ -5,6 +5,7 @@ import pandas as pd
 import mne
 from scipy.interpolate import interp1d
 import numpy as np
+from ..models import Mapping, Labels, EarEEGRef
 
 class EESM_Cleaned(BaseDataset):
     """
@@ -13,14 +14,14 @@ class EESM_Cleaned(BaseDataset):
     
     def label_mapping(self):
         return {
-            1: self.Labels.Wake,
-            2: self.Labels.REM,
-            3: self.Labels.N1,
-            4: self.Labels.N2,
-            5: self.Labels.N3,
-            6: self.Labels.UNKNOWN,
-            7: self.Labels.UNKNOWN,
-            8: self.Labels.UNKNOWN
+            1: Labels.Wake,
+            2: Labels.REM,
+            3: Labels.N1,
+            4: Labels.N2,
+            5: Labels.N3,
+            6: Labels.UNKNOWN,
+            7: Labels.UNKNOWN,
+            8: Labels.UNKNOWN
         }
         
     def dataset_name(self):
@@ -28,18 +29,7 @@ class EESM_Cleaned(BaseDataset):
 
     def channel_mapping(self):
         return {
-            "ELA": self.Mapping(self.EarEEGRef.ELA, self.EarEEGRef.REF),
-            "ELB": self.Mapping(self.EarEEGRef.ELB, self.EarEEGRef.REF),
-            "ELC": self.Mapping(self.EarEEGRef.ELC, self.EarEEGRef.REF),
-            "ELT": self.Mapping(self.EarEEGRef.ELT, self.EarEEGRef.REF),
-            "ELE": self.Mapping(self.EarEEGRef.ELE, self.EarEEGRef.REF),
-            "ELI": self.Mapping(self.EarEEGRef.ELI, self.EarEEGRef.REF),
-            "ERA": self.Mapping(self.EarEEGRef.ERA, self.EarEEGRef.REF),
-            "ERB": self.Mapping(self.EarEEGRef.ERB, self.EarEEGRef.REF),
-            "ERC": self.Mapping(self.EarEEGRef.ERC, self.EarEEGRef.REF),
-            "ERT": self.Mapping(self.EarEEGRef.ERT, self.EarEEGRef.REF),
-            "ERE": self.Mapping(self.EarEEGRef.ERE, self.EarEEGRef.REF),
-            "ERI": self.Mapping(self.EarEEGRef.ERI, self.EarEEGRef.REF),
+            "Left-Right": Mapping(EarEEGRef.EL_AVG, EarEEGRef.ER_AVG),
         }    
 
     def list_records(self, basepath):
@@ -61,7 +51,7 @@ class EESM_Cleaned(BaseDataset):
                 label_path = f"{base_label_path}/{s_path}_{r_path}_task-sleep_acq-scoring1_events.tsv"
                 
                 if os.path.exists(data_path) and os.path.exists(label_path):
-                    records.append((data_path, label_path))
+                    records.append((r_path, data_path, label_path))
                 
             paths_dict[subject_id] = records
 
@@ -75,7 +65,7 @@ class EESM_Cleaned(BaseDataset):
         try:
             label_pd = pd.read_csv(hyp_path, sep = '\t')
         except:
-            self.log_warning("Could not read CSV file", subject="", record=psg_path)
+            self.log_warning("Could not read CSV file")
             return None
                 
         y = label_pd["Scoring1"].values.tolist()
@@ -84,16 +74,36 @@ class EESM_Cleaned(BaseDataset):
         sample_rate = int(raw_data.info['sfreq'])
 
         y = np.array(y)
+        left_keys = ["ELA", "ELB", "ELC", "ELT", "ELE", "ELI"]
+        right_keys = ["ERA", "ERB", "ERC", "ERT", "ERE", "ERI"]
 
-        for c in self.channel_mapping().keys():
-            data: np.ndarray = raw_data.get_data(picks=c)
+       # left_data = np.array([])
+        #right_data = np.array([])
 
-            data = data.flatten()
+        #for c,i in enumerate(left_keys):
+        left_data: np.ndarray = raw_data.get_data(picks=left_keys)
 
-            data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y))
+        #    data = data.flatten()
 
-            x[c] = (data, sample_rate)
-        
+            #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y))
+         #   left_data[i] = data
+
+        #for c,i in enumerate(right_keys):
+        right_data: np.ndarray = raw_data.get_data(picks=right_keys)
+
+        #    data = data.flatten()
+
+            #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y)
+
+        left_avg = np.nanmean(left_data, axis=0)# left_data.mean(axis=0)
+        right_avg = np.nanmean(right_data, axis=0)
+
+        deriv = left_avg-right_avg
+
+        data, nEpochs_min = self.slice_and_interpolate_channel(deriv, sample_rate, len(y))
+
+        x["Left-Right"] = (data, sample_rate)
+
         y=y[0:nEpochs_min]
         
         return x, y

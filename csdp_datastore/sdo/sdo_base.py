@@ -3,8 +3,8 @@ import mne
 import xml.etree.ElementTree as ET
 from abc import abstractmethod
 import subprocess
-
 from csdp_datastore.base import BaseDataset, FilterSettings
+from ..models import ChannelCalculations, Labels
 
 class SleepdataOrg(BaseDataset):
 
@@ -12,27 +12,28 @@ class SleepdataOrg(BaseDataset):
         self, 
         dataset_path: str, 
         output_path: str,
+        overwrite_existing = False,
         filter: bool = True,
         filtersettings = FilterSettings(),
-        download_token: str = None,
         max_num_subjects: int = None, 
         scale_and_clip: bool = True,
         output_sample_rate: int = 128,
         data_format: str ="hdf5",
-        logging_path: str = "./SleepDataPipeline/logs"
+        logging_path: str = "./SleepDataPipeline/logs",
+        calculated_channel_config: ChannelCalculations = None
     ):
         
         super().__init__(dataset_path,
                          output_path,
+                         overwrite_existing,
                          max_num_subjects,
                          filter,
                          filtersettings,
                          scale_and_clip,
                          output_sample_rate,
                          data_format,
-                         logging_path)
-        
-        self.download_token = download_token
+                         logging_path,
+                         calculated_channel_config=calculated_channel_config)
 
     """
     ABOUT THIS DATASET
@@ -43,41 +44,20 @@ class SleepdataOrg(BaseDataset):
 
     def label_mapping(self): 
         return {
-            '0': self.Labels.Wake,
-            '1': self.Labels.N1,
-            '2': self.Labels.N2,
-            '3': self.Labels.N3,
-            '4': self.Labels.N3,
-            '5': self.Labels.REM,
-            '6': self.Labels.UNKNOWN,
-            '9': self.Labels.UNKNOWN
+            '0': Labels.Wake,
+            '1': Labels.N1,
+            '2': Labels.N2,
+            '3': Labels.N3,
+            '4': Labels.N3,
+            '5': Labels.REM,
+            '6': Labels.UNKNOWN,
+            '9': Labels.UNKNOWN
         }
     
     @property
     @abstractmethod
     def channel_mapping(self):
         pass
-
-    def download(self):
-        args = ["nsrr", "download", f"{self.download_name()}/polysomnography/annotations-events-profusion", f"--token={self.download_token}"]
-        
-        p1 = subprocess.Popen(args,
-                           stdout=subprocess.PIPE,
-                           cwd=self.dataset_path)
-        
-        args = ["nsrr", "download", f"{self.download_name()}/polysomnography/edfs", f"--token={self.download_token}"]
-        
-        p2 = subprocess.Popen(args,
-                           stdout=subprocess.PIPE,
-                           cwd=self.dataset_path)
-        
-        codes = [p.wait() for p in [p1, p2]]
-        
-        self.dataset_path = f"{self.dataset_path}/{self.download_name()}"
-        
-    @abstractmethod
-    def download_name(self):
-        return self.dataset_name()
 
     def dataset_name(self):
         return self.__class__.__name__.lower()
@@ -108,18 +88,22 @@ class SleepdataOrg(BaseDataset):
             psg_file_path = psg_files[idx]
 
             hyp_file_path = psg_file_path.replace('/'+psg+'/', '/'+hyp+'/', 1).replace('.edf', '-profusion.xml', 1)
-            splits = hyp_file_path.split("-")
+            splits = hyp_file_path.split("/")
+
+            splits = splits[-1].split("-")
+
             subject_number = splits[-2]
+            record_name = splits[-3]
             
             assert os.path.exists(psg_file_path), f"File {psg_file_path} does not exist"
             
             labels_exist = os.path.exists(hyp_file_path)
             
             if not labels_exist:
-                self.log_warning(f"File does not exist, skipping this record", subject=None, record=hyp_file_path)
+                self.log_warning(f"File does not exist, skipping this record")
                 continue
             
-            paths_dict.setdefault(subject_number, []).append((psg_file_path, hyp_file_path))
+            paths_dict.setdefault(subject_number, []).append((record_name, psg_file_path, hyp_file_path))
         
         assert len(paths_dict) > 0, "No filepaths detected"
 
@@ -174,7 +158,7 @@ class SleepdataOrg(BaseDataset):
             try:
                 final_channel_data = self.slice_channel(relative_channel_data, len(y), sample_rate)
             except Exception as msg:
-                self.log_error(msg, subject=None, record=path_to_psg)
+                self.log_error(msg)
                 return None
 
             assert len(final_channel_data) == len(y)*sample_rate*30, f"Channel length was {len(final_channel_data)}, but according to the number of labels it should be {len(y)*sample_rate*30}. Check the sample rate or override slice_channels if needed."
@@ -189,7 +173,6 @@ class SleepdataOrg(BaseDataset):
 
         if len(not_found_chnls) > 0:
             self.log_warning('Did not find channels: {channels} was not found in the record. Possibilities are {present}'.format(channels=not_found_chnls,
-                                                                                                                                 present=data.ch_names),
-                             record=path_to_psg)
+                                                                                                                                 present=data.ch_names))
             
         return x, y

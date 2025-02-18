@@ -8,25 +8,26 @@ import h5py
 import pickle
 import os
 import json
-import pandas as pd
-import seaborn as sn
-import matplotlib.pyplot as plt
-import numpy as np
 
-def log_test_step(base, run_id, dataset, subject, record, **kwargs):
+def log_test_step(base, dataset, subject, record, **kwargs):
         """
         Used for logging raw predictions and true labels for a single step. Extra logging to Neptune happens through kwargs.
         Logging to file at location: ???
         Naming convention of file: {model_name}_{run_id} ???
         """
 
-        identifier = f"{dataset}.{subject}.{record}"
+        #if eeg_tag != None and eog_tag != None:
+        #    identifier = f"pred_{eeg_tag}.{eog_tag}"
+        #else:
+        #    identifier = f"pred"
 
-        print(f"logging for: {dataset}/{identifier}")
+        #print(f"logging for: {dataset}/{identifier}")
         
-        print(f"kwargs: {kwargs}")
+        #print(f"kwargs: {kwargs}")
 
-        path = f"{base}/{run_id}/{dataset}"
+        identifier = "preds"
+
+        path = f"{base}/{dataset}/{subject}/{record}"
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -46,23 +47,6 @@ def filter_unknowns(predictions, labels):
     assert len(labels) == len(predictions)
     
     return predictions, labels
-
-def plot_confusionmatrix(conf, title, percentages = True, formatting = '.2f', save_figure=False, save_path=None):
-
-    if percentages:
-        conf = conf.astype('float') / conf.sum(axis=1)[:, np.newaxis]
-        
-    df_cm = pd.DataFrame(conf,
-                         index = [i for i in ["Wake", "N1", "N2", "N3", "REM"]],
-                         columns = [i for i in ["Wake", "N1", "N2", "N3", "REM"]])
-    
-    plt.title(title)
-    plt.figure(figsize=(10,7))
-
-    f = sn.heatmap(df_cm, annot=True, fmt=formatting)
-    f.set(xlabel='Predicted', ylabel='Truth')
-
-    return f.figure
 
 def kappa(predictions, labels, num_classes=5):
     predictions, labels = filter_unknowns(predictions, labels)
@@ -123,14 +107,28 @@ def create_split_file(hdf5_basepath):
             output_dic[dataset_name]["test"] = test
 
     json_object = json.dumps(output_dic, indent=4)
-    print(json_object)
 
     with open("random_split.json", 'w') as fp:
         fp.write(json_object)
     
     return output_name
 
+def get_majority_vote_predictions(path):
+    with open(path, "rb") as f:
+        data = pickle.load(f)
+        preds = data["preds"]
+        labels = data["labels"]
 
-if __name__ == '__main__':
-    create_split_file("C:/Users/au588953/test_hdf5")
+    num_epochs = labels.shape[0]
+    num_classes = 5
+        
+    votes = torch.zeros(num_epochs, num_classes)
+
+    for item in preds.items():
+        pred = item[1]
+        votes = torch.add(votes, pred)
+
+    votes = torch.argmax(votes, axis=1)
+
+    return votes, labels
     

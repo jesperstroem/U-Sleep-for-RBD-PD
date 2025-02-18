@@ -1,7 +1,4 @@
-import os
-import mne
-import sys
-
+from ..models import TTRef, Mapping
 from .sdo_base import SleepdataOrg
 
 
@@ -14,25 +11,22 @@ class CHAT(SleepdataOrg):
     
     EEG and EOG signals were each sampled at 200Hz.
     """ 
-    
-    def download_name(self):
-        return "chat"
 
     def channel_mapping(self):
-        r2 = self.TTRef.Fz
+        r2 = TTRef.Fpz
 
         return {
-            "M1": self.Mapping(self.TTRef.LPA, r2),
-            "M2": self.Mapping(self.TTRef.RPA, r2),
-            "C3": self.Mapping(self.TTRef.C3, r2),
-            "C4": self.Mapping(self.TTRef.C4, r2),
-            "O1": self.Mapping(self.TTRef.O1, r2),
-            "O2": self.Mapping(self.TTRef.O2, r2),
-            "F3": self.Mapping(self.TTRef.F3, r2),
-            "F4": self.Mapping(self.TTRef.F4, r2),
-            "T3": self.Mapping(self.TTRef.T7, r2),
-            "T4": self.Mapping(self.TTRef.T8, r2),
-            "E1": self.Mapping(self.TTRef.EL, r2),
-            "E2": self.Mapping(self.TTRef.ER, r2)
+            "M1": Mapping(TTRef.LPA, r2),
+            "M2": Mapping(TTRef.RPA, r2),
+            "C3": Mapping(TTRef.C3, r2),
+            "C4": Mapping(TTRef.C4, r2),
+            "O1": Mapping(TTRef.O1, r2),
+            "O2": Mapping(TTRef.O2, r2),
+            "F3": Mapping(TTRef.F3, r2),
+            "F4": Mapping(TTRef.F4, r2),
+            "T3": Mapping(TTRef.T7, r2),
+            "T4": Mapping(TTRef.T8, r2),
+            "E1": Mapping(TTRef.EL, r2),
+            "E2": Mapping(TTRef.ER, r2)
         }
         

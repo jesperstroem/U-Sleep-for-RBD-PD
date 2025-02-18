@@ -7,9 +7,7 @@ Created on Fri Feb 17 10:25:31 2023
 
 import torch
 
-from csdp_pipeline.pipeline_elements.pipe import IPipe
-from csdp_pipeline.pipeline_elements.determ_sampler import Determ_sampler
-
+from csdp_pipeline.pipeline_elements.pipeline import IPipe
 from scipy.signal import resample_poly
 
 class Resampler(IPipe):
@@ -47,14 +45,3 @@ class Resampler(IPipe):
         eog_resampled = self.resample_collection(eogs)
 
         return eeg_resampled, eog_resampled, labels, tags
-                
-if __name__ == '__main__':
-    sa = Determ_sampler(["/home/alec/repos/data/hdf5_sdo/cfs.hdf5"], 200)
-    sp = Resampler(128, 100)
-    
-    batch = sa.process(0)
-    #print(batch)
-    eegs, eogs,y,tags = sp.process(batch)
-    print(eegs.shape)
-    print(eogs.shape)
-    print(tags)

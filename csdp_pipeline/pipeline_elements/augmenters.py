@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import random
 
-from csdp_pipeline.pipeline_elements.pipe import IPipe
+from csdp_pipeline.pipeline_elements.pipeline import IPipe
 
 # TODO: aug_weight!
 

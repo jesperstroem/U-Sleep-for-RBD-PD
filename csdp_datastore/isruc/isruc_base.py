@@ -3,6 +3,7 @@ import scipy.io
 import numpy as np
 from abc import abstractmethod
 from csdp_datastore.base import BaseDataset
+from ..models import TTRef, Mapping, Labels
 
 class Isruc_base(BaseDataset):
     """
@@ -21,24 +22,24 @@ class Isruc_base(BaseDataset):
     
     def label_mapping(self):
         return {
-            "0": self.Labels.Wake,
-            "1": self.Labels.N1,
-            "2": self.Labels.N2,
-            "3": self.Labels.N3,
-            "5": self.Labels.REM,
+            "0": Labels.Wake,
+            "1": Labels.N1,
+            "2": Labels.N2,
+            "3": Labels.N3,
+            "5": Labels.REM,
         }
     
     
     def channel_mapping(self):
         return {
-            "F3_A2": self.Mapping(self.TTRef.F3, self.TTRef.RPA),
-            "C3_A2": self.Mapping(self.TTRef.C3, self.TTRef.RPA),
-            "F4_A1": self.Mapping(self.TTRef.F4, self.TTRef.LPA),
-            "C4_A1": self.Mapping(self.TTRef.C4, self.TTRef.LPA),
-            "O1_A2": self.Mapping(self.TTRef.O1, self.TTRef.RPA),
-            "O2_A1": self.Mapping(self.TTRef.O2, self.TTRef.LPA),
-            "ROC_A1": self.Mapping(self.TTRef.ER, self.TTRef.LPA),
-            "LOC_A2": self.Mapping(self.TTRef.EL, self.TTRef.RPA),
+            "F3_A2": Mapping(TTRef.F3, TTRef.RPA),
+            "C3_A2": Mapping(TTRef.C3, TTRef.RPA),
+            "F4_A1": Mapping(TTRef.F4, TTRef.LPA),
+            "C4_A1": Mapping(TTRef.C4, TTRef.LPA),
+            "O1_A2": Mapping(TTRef.O1, TTRef.RPA),
+            "O2_A1": Mapping(TTRef.O2, TTRef.LPA),
+            "ROC_A1": Mapping(TTRef.ER, TTRef.LPA),
+            "LOC_A2": Mapping(TTRef.EL, TTRef.RPA),
         }
     
     def list_records(self, basepath):
@@ -55,7 +56,7 @@ class Isruc_base(BaseDataset):
             datapath = recordpath+"subject"+path+".mat"
             labelpath = recordpath+path+'_'+"1.txt"
             
-            paths_dict[path] = [(datapath, labelpath)]
+            paths_dict[path] = [("1", datapath, labelpath)]
         
         return paths_dict
     
@@ -77,7 +78,7 @@ class Isruc_base(BaseDataset):
             y_trunc = y[:int(x_len/self.sample_rate()/30)]
             trunc_len = len(y)-len(y_trunc)
             if trunc_len > 31:
-                self.log_warning(f"Length of truncated y was: {trunc_len}.", subject=None, record=labelpath)
+                self.log_warning(f"Length of truncated y was: {trunc_len}.")
                 return None
             
         return x, y_trunc

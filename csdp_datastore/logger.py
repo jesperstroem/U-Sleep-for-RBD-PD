@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 import datetime
+import xlsxwriter as xls
 
 class EventSeverity(Enum):
     Info = "INFO"
@@ -11,33 +12,56 @@ class EventSeverity(Enum):
         return self.name
 
 class LoggingModule:
-    def __init__(self, logging_path):
-        self.start_time = datetime.datetime.now() 
-        self.loggers = [CmdLogger()]
+    def __init__(self):
+        self.loggers = [CmdLogger(), ExcelLogger()]
 
     def log(self, msg, dataset, subject, record, severity):
         timestamp = datetime.datetime.now()
 
-        msg = 'Log [{sev}]: {msg}. [Dataset]={d} [Subject]={s} [Record]={r} [Time]={t}'.format(sev=severity,
-                                                                                            msg=msg,
-                                                                                           d = dataset,
-                                                                                           s = subject,
-                                                                                           r = record, t = timestamp)
-        
         for l in self.loggers:
-            l.log_message(msg, dataset, severity, self.start_time)
+            l.log_message(msg, dataset, severity, subject, record, timestamp)
+        
+    def final(self, dataset_name):
+        for l in self.loggers:
+            l.final(dataset_name)
 
 
 class Logger(ABC):        
     @abstractmethod
-    def log_message(self, msg, dataset, severity, run_index):
+    def log_message(self, msg, dataset, severity, subject, record, timestamp):
         pass
 
+    def final(self, dataset_name):
+        pass
 
 class CmdLogger(Logger):
-    def log_message(self, msg, dataset, severity, run_index):
+    def log_message(self, msg, dataset, severity, subject, record, timestamp):
+        msg = 'Log [{sev}]: {msg}. [Dataset]={d} [Subject]={s} [Record]={r} [Time]={t}'.format(sev=severity,
+                                                                                               msg=msg,
+                                                                                               d = dataset,
+                                                                                               s = subject,
+                                                                                               r = record, 
+                                                                                               t = timestamp)
         print(msg, flush=True)
     
+class ExcelLogger(Logger):
+    def __init__(self):
+        self.messages = []
+
+    def log_message(self, msg, dataset, severity, subject, record, timestamp):
+        self.messages.append([timestamp, dataset, subject, record, severity.value, msg])
+    
+    def final(self, dataset_name):
+        workbook = xls.Workbook(f'{dataset_name}_port_log.xlsx')
+        worksheet = workbook.add_worksheet()
+        worksheet.write_row(0,0,["time", "dataset", "subject", "record", "severity", "message"])
+        row_index = 1
+        
+        for msg in self.messages:
+            worksheet.write_row(row_index, 0, msg)
+            row_index+=1
+
+        workbook.close()
 
 class TxtLogger(Logger):
     def __init__(self, path):
