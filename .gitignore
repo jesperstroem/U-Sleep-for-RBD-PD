@@ -23,6 +23,8 @@ lightning_logs/
 *.pyc
 *.out
 
+splits/
+
 test_data/
 
 results/

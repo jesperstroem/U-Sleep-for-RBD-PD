@@ -44,6 +44,7 @@ class Sedf_PhysioNet(Base_Sedf):
             psg_path = f"{basepath}{psg}"
             
             subject_id = record_name[:5]
+            record_id = record_name[5:7]
             
             # Finding hypnogram matching PSG
             hyp_file_matches = [s for s in hyp_list if record_name[:6] in s]
@@ -52,9 +53,9 @@ class Sedf_PhysioNet(Base_Sedf):
             hyp_path = f"{basepath}{hyp_file_matches[0]}"
             
             if subject_id in paths_dict.keys():
-                paths_dict[subject_id].append((psg_path, hyp_path))
+                paths_dict[subject_id].append((record_id, psg_path, hyp_path))
             else:
-                paths_dict[subject_id] = [(psg_path, hyp_path)]
+                paths_dict[subject_id] = [(record_id, psg_path, hyp_path)]
         
         #print(paths_dict)
         return paths_dict

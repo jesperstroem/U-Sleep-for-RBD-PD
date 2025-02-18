@@ -8,7 +8,7 @@ Created on Fri Feb 17 10:25:31 2023
 import torch
 import numpy as np
 
-from csdp_pipeline.pipeline_elements.pipe import IPipe
+from csdp_pipeline.pipeline_elements.pipeline import IPipe
 from csdp_pipeline.preprocessing.spectrogram import create_spectrogram_images
 
 class Spectrogram(IPipe):

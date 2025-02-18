@@ -1,8 +1,5 @@
-import os
-import mne
-import sys
-
 from .sdo_base import SleepdataOrg
+from ..models import TTRef, Mapping
 
 
 class CCSHS(SleepdataOrg):
@@ -14,19 +11,16 @@ class CCSHS(SleepdataOrg):
     
     EEG and EOG signals were each sampled at 200Hz.
     """  
-    
-    def download_name(self):
-        return "ccshs"
 
     def channel_mapping(self):
-        r2 = self.TTRef.Fpz
+        r2 = TTRef.Fpz
         
         return {
-            "C3": self.Mapping(self.TTRef.C3, r2),
-            "C4": self.Mapping(self.TTRef.C4, r2),
-            "A1": self.Mapping(self.TTRef.LPA, r2),
-            "A2": self.Mapping(self.TTRef.RPA, r2),
-            "LOC": self.Mapping(self.TTRef.EL, r2),
-            "ROC": self.Mapping(self.TTRef.ER, r2)
+            "C3":  Mapping(TTRef.C3, r2),
+            "C4":  Mapping(TTRef.C4, r2),
+            "A1":  Mapping(TTRef.LPA, r2),
+            "A2":  Mapping(TTRef.RPA, r2),
+            "LOC": Mapping(TTRef.EL, r2),
+            "ROC": Mapping(TTRef.ER, r2)
         }
         

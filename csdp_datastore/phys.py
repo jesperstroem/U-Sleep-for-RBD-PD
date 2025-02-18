@@ -2,7 +2,7 @@ import os
 import h5py
 import wfdb
 import numpy as np
-
+from .models import TTRef, Mapping, Labels
 from .base import BaseDataset
 
 
@@ -10,12 +10,12 @@ class PHYS(BaseDataset):
 
     def label_mapping(self):
         return {
-            0: self.Labels.N1,
-            1: self.Labels.N2,
-            2: self.Labels.N3,
-            3: self.Labels.REM,
-            4: self.Labels.UNKNOWN,
-            5: self.Labels.Wake,
+            0: Labels.N1,
+            1: Labels.N2,
+            2: Labels.N3,
+            3: Labels.REM,
+            4: Labels.UNKNOWN,
+            5: Labels.Wake,
         }
         
     def dataset_name(self):
@@ -23,13 +23,13 @@ class PHYS(BaseDataset):
     
     def channel_mapping(self):
         return {
-            "F3-M2": self.Mapping(self.TTRef.F3, self.TTRef.RPA), 
-            "F4-M1": self.Mapping(self.TTRef.F4, self.TTRef.LPA),
-            "C3-M2": self.Mapping(self.TTRef.C3, self.TTRef.RPA),
-            "C4-M1": self.Mapping(self.TTRef.C4, self.TTRef.LPA),
-            "O1-M2": self.Mapping(self.TTRef.O1, self.TTRef.RPA),
-            "O2-M1": self.Mapping(self.TTRef.O2, self.TTRef.LPA),
-            "E1-M2": self.Mapping(self.TTRef.EL, self.TTRef.RPA)
+            "F3-M2": Mapping(TTRef.F3, TTRef.RPA), 
+            "F4-M1": Mapping(TTRef.F4, TTRef.LPA),
+            "C3-M2": Mapping(TTRef.C3, TTRef.RPA),
+            "C4-M1": Mapping(TTRef.C4, TTRef.LPA),
+            "O1-M2": Mapping(TTRef.O1, TTRef.RPA),
+            "O2-M1": Mapping(TTRef.O2, TTRef.LPA),
+            "E1-M2": Mapping(TTRef.EL, TTRef.RPA)
         }
     
     def list_records(self, basepath):
@@ -40,14 +40,15 @@ class PHYS(BaseDataset):
             
             data_path = filebase+'.hea'
             label_path = filebase+'-arousal.mat'
+            record_name = "1" #Only one record per subject
             
             exists = os.path.exists(label_path) and os.path.exists(data_path)
             
             if not exists:
-                self.log_warning('The record did not exist', subject)
+                self.log_warning('The record did not exist')
                 continue
             
-            paths_dict[subject] = [(data_path, label_path)]
+            paths_dict[subject] = [(record_name, data_path, label_path)]
 
         return paths_dict
     
@@ -60,7 +61,7 @@ class PHYS(BaseDataset):
             data_path = data_path.rstrip('.hea')
             r = wfdb.rdrecord(data_path)
         except ValueError:
-            self.log_error("Could not read data file", subject=None, record=data_path)
+            self.log_error("Could not read data file")
             return None
 
         with h5py.File(label_path, 'r') as f:
@@ -95,7 +96,7 @@ class PHYS(BaseDataset):
             label_len = len(y)*sample_rate*30
             
             if len(data) < label_len:
-                self.log_error("Not enough data for the amount of labels", subject=None, record=data_path)
+                self.log_error("Not enough data for the amount of labels")
                 return None
             
             data = data[:label_len]
