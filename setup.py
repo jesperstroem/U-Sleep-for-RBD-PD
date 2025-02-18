@@ -17,6 +17,12 @@ setup(
         "csdp_training.lightning_models",
         "csdp_training.lightning_models.factories",
         "csdp_datastore",
+        "csdp_datastore.sdo",
+        "csdp_datastore.mass",
+        "csdp_datastore.dod",
+        "csdp_datastore.eesm",
+        "csdp_datastore.isruc",
+        "csdp_datastore.sedf"
     ],
     install_requires=["h5py==3.10.0", 
                       "mne==1.4.2",
