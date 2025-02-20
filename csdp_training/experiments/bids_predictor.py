@@ -10,6 +10,17 @@ class BIDS_USleep_Predictor():
                  data_task, 
                  subjects=None, 
                  sessions=None):
+        """Helper class that can sleep-stage a full BIDS dataset with a pre-trained version of U-Sleep
+
+        Args:
+            data_dir (str): Root directory of the BIDS dataset
+            data_extension (str): Extension of the datafiles. Valid types at the moment are .edf, .set, .vhdr
+            data_task (str): Task of the BIDS files - "...task-<data task>" - most often it is "sleep"
+            subjects (list(str), optional): List of subjects, e.g. ["sub-001", "sub-002"]. Defaults to None which means it will sleep-stage every subject
+            sessions (list(str), optional): List of sessions, e.g. ["ses-001"]. Defaults to None, which means it will sleepstage every session.
+        """
+        assert (data_extension==".vhdr") or (data_extension==".set") or (data_extension==".edf")
+        
         self.data_dir = data_dir
         self.data_extension = data_extension
         self.data_task = data_task
