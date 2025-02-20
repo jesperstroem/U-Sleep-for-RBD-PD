@@ -12,6 +12,16 @@ class EESM_Cleaned(BaseDataset):
     ABOUT THIS DATASET 
     """
     
+    def __init__(
+        self, 
+        dataset_path: str, 
+        output_path: str,
+        do_nan_interpolation: bool = True,
+    ):
+        self.do_nan_interpolation = do_nan_interpolation
+        super().__init__(dataset_path=dataset_path,
+                         output_path=output_path)
+
     def label_mapping(self):
         return {
             1: Labels.Wake,
@@ -77,25 +87,10 @@ class EESM_Cleaned(BaseDataset):
         left_keys = ["ELA", "ELB", "ELC", "ELT", "ELE", "ELI"]
         right_keys = ["ERA", "ERB", "ERC", "ERT", "ERE", "ERI"]
 
-       # left_data = np.array([])
-        #right_data = np.array([])
-
-        #for c,i in enumerate(left_keys):
         left_data: np.ndarray = raw_data.get_data(picks=left_keys)
-
-        #    data = data.flatten()
-
-            #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y))
-         #   left_data[i] = data
-
-        #for c,i in enumerate(right_keys):
         right_data: np.ndarray = raw_data.get_data(picks=right_keys)
 
-        #    data = data.flatten()
-
-            #data, nEpochs_min = self.slice_and_interpolate_channel(data, sample_rate, len(y)
-
-        left_avg = np.nanmean(left_data, axis=0)# left_data.mean(axis=0)
+        left_avg = np.nanmean(left_data, axis=0)
         right_avg = np.nanmean(right_data, axis=0)
 
         deriv = left_avg-right_avg
@@ -119,7 +114,8 @@ class EESM_Cleaned(BaseDataset):
 
         data[inputNans]=0
 
-        data=self.interpolateOverNans(data,sample_rate)
+        if self.do_nan_interpolation == True:
+            data=self.interpolateOverNans(data,sample_rate)
 
         nEpochs_min=min(nEpochs,y_len)
 

@@ -24,7 +24,7 @@ setup(
         "csdp_datastore.isruc",
         "csdp_datastore.sedf"
     ],
-    install_requires=["h5py==3.10.0", 
+    install_requires=["h5py==3.10.0",
                       "mne==1.4.2",
                       "pandas==2.1.4", 
                       "pyarrow==14.0.2",
@@ -33,5 +33,6 @@ setup(
                       "scikit_learn==1.3.2",
                       "neptune==1.13.0",
                       "mne-bids==0.13",
-                      "wfdb==4.1.2"],
+                      "wfdb==4.1.2",
+                      "XlsxWriter==3.2.2"],
 )

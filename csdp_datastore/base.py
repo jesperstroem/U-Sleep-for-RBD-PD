@@ -7,7 +7,7 @@ from pathlib import Path
 from h5py import File
 from .logger import LoggingModule, EventSeverity
 from .models import FilterSettings, ChannelCalculations, Labels, Mapping
-from ..csdp_pipeline.preprocessing.usleep_prep_steps import scale_channel, filter_channel, remove_dc, resample_channel, clip_channel
+from csdp_pipeline.preprocessing.usleep_prep_steps import scale_channel, filter_channel, remove_dc, resample_channel, clip_channel
 
 class BaseDataset(ABC):
     def __init__(
