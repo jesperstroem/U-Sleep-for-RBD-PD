@@ -65,6 +65,7 @@ class BIDS_USleep_Predictor():
         dataLoader=torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
 
         all_preds = []
+        all_confidences = []
 
         for _, (x, _) in enumerate(dataLoader):
             if num_channels == 1:
@@ -88,12 +89,13 @@ class BIDS_USleep_Predictor():
                 pred = item[1]
                 votes = torch.add(votes, pred)
 
-            preds = torch.argmax(votes, axis=1)
-            preds = torch.squeeze(preds)
-
+            votes = torch.squeeze(votes)
+            votes = votes / len(output.items())
+            all_confidences.append(votes)
+            preds = torch.argmax(votes, axis=0)
             all_preds.append(preds)
 
-        return all_preds
+        return all_preds, all_confidences
 
     def build_dataset(self, channel_names: list):
         """Builds a Dataset object from a list of channel names
