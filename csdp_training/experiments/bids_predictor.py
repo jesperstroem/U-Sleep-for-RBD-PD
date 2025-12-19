@@ -3,31 +3,22 @@ import mne_bids as mb
 import torch
 from ..lightning_models.factories.lightning_model_factory import USleep_Factory, USleep_Lightning
 
-class BIDS_USleep_Predictor():
+class USleep_Predictor():
     def __init__(self,
-                 data_dir, 
-                 data_extension, 
-                 data_task, 
-                 subjects=None, 
-                 sessions=None):
-        """Helper class that can sleep-stage a full BIDS dataset with a pre-trained version of U-Sleep
+                 filepath: str):
+        """Helper class that can sleep-stage an MNE compatible file with a pre-trained version of U-Sleep
 
         Args:
-            data_dir (str): Root directory of the BIDS dataset
-            data_extension (str): Extension of the datafiles. Valid types at the moment are .edf, .set, .vhdr
-            data_task (str): Task of the BIDS files - "...task-<data task>" - most often it is "sleep"
-            subjects (list(str), optional): List of subjects, e.g. ["sub-001", "sub-002"]. Defaults to None which means it will sleep-stage every subject
-            sessions (list(str), optional): List of sessions, e.g. ["ses-001"]. Defaults to None, which means it will sleepstage every session.
+            filepath (str): Path to the MNE compatible file.
         """
-        assert (data_extension==".vhdr") or (data_extension==".set") or (data_extension==".edf")
 
-        self.data_dir = data_dir
-        self.data_extension = data_extension
-        self.data_task = data_task
-        self.subjects = subjects
-        self.sessions = sessions
+        assert type(filepath) is str, "You must specify a path to the MNE compatible file"
 
-        self.filepaths = mb.find_matching_paths(data_dir,extensions=data_extension,tasks=data_task,subjects=subjects, sessions=sessions)
+        extension = filepath.split(".")[-1]
+
+        assert (extension=="vhdr") or (extension=="set") or (extension=="edf"), "The file extension must be either .vhdr, .set or .edf"
+
+        self.filepaths = [filepath]
 
     def get_available_channels(self):
         """Helper function to obtain channel information from the BIDS dataset

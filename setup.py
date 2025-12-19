@@ -4,7 +4,7 @@ setup(
     name="commonsleepdatapipeline",
     version="1.0.1",
     description="Package for data serving neural networks in automatic sleep staging",
-    url="https://gitlab.au.dk/tech_ear-eeg/common-sleep-data-pipeline",
+    url="https://github.com/jesperstroem/CSDP",
     author="Jesper Strøm",
     author_email="js@ece.au.dk",
     packages=[
@@ -16,13 +16,10 @@ setup(
         "csdp_training.experiments",
         "csdp_training.lightning_models",
         "csdp_training.lightning_models.factories",
-        "csdp_datastore",
-        "csdp_datastore.sdo",
-        "csdp_datastore.mass",
-        "csdp_datastore.dod",
-        "csdp_datastore.eesm",
-        "csdp_datastore.isruc",
-        "csdp_datastore.sedf"
+        "ml_architectures",
+        "ml_architectures.common",
+        "ml_architectures.lseqsleepnet",
+        "ml_architectures.usleep"
     ],
     install_requires=["h5py==3.10.0",
                       "mne==1.4.2",
