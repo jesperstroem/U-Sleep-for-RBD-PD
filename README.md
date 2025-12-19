@@ -1,9 +1,10 @@
-# 
-This repository will show you how to install and use the U-Sleep model.
+# Automatic Sleep Staging for RBD and PD Populations
+
+This repository will show you how to install and use the U-Sleep model which has been finetuned towards individuals with REM Sleep Behavior Disorder (RBD) and Parkinson's Disease (PD).
 
 Two different models exist:
 1. The Pretrained Model, which is suitable for the general healthy population.
-2. The Generalized Model, which is suitable for the general healthy population, as well as for individuals with REM Sleep Behavior Disorder and/or Parkinson's Disease.
+2. The Generalized Model, which is suitable for the general healthy population, as well as for individuals with RBD and/or PD.
 
 At the moment, it works with MNE compatible files (.set, .vhdr, .edf).
 
