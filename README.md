@@ -66,4 +66,4 @@ python -m pip install .
 ## Demo
 Now you can start sleep staging your MNE compatible files.
 
-Check the demoscript (demo.py) for an example of how to use the model and the different weights.
+Check the demo notebook (demo.ipynb) for an example of how to use the model and the different weights.
