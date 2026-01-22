@@ -32,8 +32,8 @@ class USleep_Predictor():
         return set.intersection(*[set(x) for x in ch_names])
         ##else:
          #   return ch_names
-        
-    def predict_all(self, lighting_checkpoint, dataset, eeg_indexes=None, eog_indexes=None):
+         
+    def predict_all(self, lighting_checkpoint, dataset, prediction_resolution=3840, eeg_indexes=None, eog_indexes=None):
         """Function to predict on a dataset object, given a U-Sleep checkpoint
 
         Args:
@@ -48,6 +48,8 @@ class USleep_Predictor():
         fac = USleep_Factory(lr=0.0001, batch_size=64)
         usleep: USleep_Lightning = fac.create_pretrained_net(lighting_checkpoint)
         num_channels = usleep.num_channels
+
+        usleep.prediction_resolution = prediction_resolution
 
         if num_channels==2:
             if (eeg_indexes==None) or (eog_indexes==None):
