@@ -65,7 +65,7 @@ class USleep_Predictor():
                 output = usleep.majority_vote_prediction(x_eegs=x)
             elif num_channels == 2:
                 eegs = torch.index_select(x, dim=1, index=torch.tensor(eeg_indexes))
-                eogs = torch.index_select(x, dim=1, index=torch.tensor(eeg_indexes))
+                eogs = torch.index_select(x, dim=1, index=torch.tensor(eog_indexes))
 
                 output = usleep.majority_vote_prediction(x_eegs=eegs, x_eogs=eogs)
             else:
