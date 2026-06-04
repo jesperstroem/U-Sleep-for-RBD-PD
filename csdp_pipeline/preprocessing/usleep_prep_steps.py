@@ -3,6 +3,32 @@ from scipy.signal import resample_poly
 from sklearn.preprocessing import RobustScaler
 from scipy import signal
 
+class FilterSettings():
+    '''Class to specify filter settings for the dataset. Can be used to specify a highpass, lowpass or bandpass filter.
+    If lcut is not None and hcut is None, a highpass filter is applied with cutoff lcut.
+    If hcut is not None and lcut is None, a lowpass filter is applied with cutoff hcut.
+    If both lcut and hcut are not None, a bandpass filter is applied with cutoffs lcut and hcut.'''
+    def __init__(self,
+                 lcut = 0.1,
+                 hcut = None,
+                 order = 2):
+        if lcut != None and hcut == None:
+            type = "highpass"
+            self.cutoffs = lcut
+        elif hcut != None and lcut == None:
+            type = "lowpass"
+            self.cutoffs = hcut
+        else:
+            type = "bandpass"
+            self.cutoffs = [lcut, hcut]
+
+        self.order = order
+        self.type = type
+
+    cutoffs: list[float]
+    order: int
+    type: str
+
 def filter_channel(channel, fs, filtersettings):
     order = filtersettings.order
     cutoffs = filtersettings.cutoffs

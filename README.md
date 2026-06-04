@@ -107,4 +107,4 @@ python -m pip install .
 
 You can now begin performing automatic sleep staging on your MNE-compatible files.
 
-See the provided Python notebook (`demo.ipynb`) for an example demonstrating how to use the supplied model weights.
+See the provided Python notebook (`demos/demo.ipynb`) for an example demonstrating how to use the supplied model weights.

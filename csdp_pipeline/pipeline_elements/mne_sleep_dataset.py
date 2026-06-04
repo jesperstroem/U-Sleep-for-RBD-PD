@@ -8,41 +8,28 @@
 
 #%% set up dataset
 
-import types
 import mne
 import torch
 import numpy as np
-import h5py
-
-import pandas as pd
-from ..preprocessing.usleep_prep_steps import scale_channel, filter_channel, remove_dc, resample_channel, clip_channel, scale_channel_manual, clip_channels
+from csdp_pipeline.preprocessing.usleep_prep_steps import scale_channel, filter_channel, remove_dc, resample_channel, clip_channel, FilterSettings
 
 class sleep_dataset_from_paths(torch.utils.data.Dataset):
-    ''' Creates torch dataset from list of EEG files and scoring files.
-    Applies standard preprocessing to match usleep requirements.
-    Syntax:
-    sleep_dataset_from_paths( EEG_paths,L=1,scoring_paths=[], derivations=None,scoring_preprocess=None,hdf5File=None)
+    '''Dataset class for sending sleep data to U-Sleep. 
+    Takes a list of file paths as input, and preprocesses the data according to the settings specified in the constructor. 
+    The data is preprocessed to be in line with the preprocessing steps used in U-Sleep, and is returned as a torch tensor. 
+    The dataset can be used for training, validation and testing.
 
-    hdf5File is a previous instance of sleep_dataset_from_paths that has been saved to a hdf5 file.
-    If hdf5File is not None, the dataset is loaded from the hdf5 file, ignoring the other arguments.
-    '''
-    def __init__(self, EEG_paths,L=1,scoring_paths=[], ch_names=None,
-        derivations=None,scoring_preprocess=None,hdf5File=None,fullRecords=False):
-        if hdf5File is None:
-            self.constructFromPaths( EEG_paths,L,scoring_paths,ch_names, derivations,scoring_preprocess,fullRecords)
-        else:
-            self.constructFromHDF5(hdf5File)
-
-
-    def checkDerivations(self):
-        '''checks that the derivations have the correct format'''
-
-        if self.derivations is not None:
-            for deriv in self.derivations:
-                #derivations should be a list of 2-element tuples
-                assert len(deriv)==2
+    Args:
+    EEG_paths: list of file paths to the EEG data. The files must be in a format that can be read by MNE (e.g. .vhdr, .set, .edf).
+    ch_names: list of channel names to be used. If None, all channels are used. Defaults to None.
+    L: number of epochs to be drawn at a time. Defaults to 1.
+    fullRecords: whether to return full records instead of draws of L epochs. Defaults to False.
+    fsets: FilterSettings object specifying the filter settings for the dataset. Defaults to a highpass filter with cutoff 0.1 Hz and order 2. If fsets is None, no filtering is applied.'''
+    def __init__(self, EEG_paths, ch_names=None, L=1,fullRecords=False, fsets=FilterSettings(lcut=0.1,hcut=None,order=2)):
+        self.__constructFromPaths(EEG_paths,L,ch_names,fullRecords, fsets)
 
     def get_available_channels(filePaths):
+        '''Helper function to obtain channel information from the MNE compatible files specified in filePaths'''
         filePaths=[str(fp) for fp in filePaths]
         names = []
 
@@ -53,75 +40,46 @@ class sleep_dataset_from_paths(torch.utils.data.Dataset):
 
         return names
 
-    def constructFromPaths(self, EEG_paths,L,scoring_paths=[], ch_names = None, derivations=None,scoring_preprocess=None,fullRecords=False):
-        '''Standard constructor'''
-
+    def __constructFromPaths(self, EEG_paths,L, ch_names, fullRecords, fsets):
+        self.fsets = fsets
         self.file_paths=[str(fp) for fp in EEG_paths]
-        self.scoring_paths=[str(fp) for fp in scoring_paths]
-        self.derivations=derivations
         self.L=L
         self.epochLength=128*30 #30 seconds
         self.fullRecords=fullRecords
-
-        if scoring_preprocess is not None:
-            self.preprocess_scoring=lambda idx: scoring_preprocess(self,idx)
-        else:
-            self.preprocess_scoring=self.preprocess_scoring_default
-
-        self.checkDerivations()
 
         #preload data files and preprocess:
         self.data_arrays=[]
         self.nansamples=[]
         for path in self.file_paths:
-            tempRaw= sleep_dataset_from_paths.open_eeg_file(path)
+            tempRaw = sleep_dataset_from_paths.open_eeg_file(path)
 
-            if self.derivations is not None:
-                data=np.zeros((len(self.derivations),tempRaw.get_data().shape[1]))
-                for idx,deriv in enumerate(self.derivations):
-                    data[idx,:]=np.nanmean(tempRaw.get_data(picks=deriv[0]),axis=0)-np.nanmean(tempRaw.get_data(picks=deriv[1]),axis=0)
-            elif ch_names is not None:
+            if ch_names is not None:
                 data=tempRaw.get_data(picks=ch_names)
             else:
                 data=tempRaw.get_data()
 
-            data=self.preprocess_data(data,sfreq= tempRaw.info['sfreq'])
+            data=self.__preprocess_data(data,sfreq= tempRaw.info['sfreq'])
 
             self.data_arrays.append(data)
 
-
-        #preload scoring files and match lengths with data arrays:
-        if len(self.scoring_paths)>0:
-            self.scoring_arrays=[]
-            for idx,path in enumerate(self.scoring_paths):
-
-                #appends to scoring_arrays internally:
-                self.preprocess_scoring(idx)
-
-                #make sure that the scoring arrays are the same length as the data arrays:
-                assert len(self.scoring_arrays[idx])==self.data_arrays[idx].shape[1]//self.epochLength
-        else:
-            #just make sure the data has length equal to integer number of epochs:
-            for idx,data in enumerate(self.data_arrays):
-                nSamples=data.shape[1]
-                nSamples=(nSamples//self.epochLength)*self.epochLength
-                self.data_arrays[idx]=data[:,:nSamples]
+        #just make sure the data has length equal to integer number of epochs:
+        for idx,data in enumerate(self.data_arrays):
+            nSamples=data.shape[1]
+            nSamples=(nSamples//self.epochLength)*self.epochLength
+            self.data_arrays[idx]=data[:,:nSamples]
 
         #extract nansamples again:
         #it has to be done after preprocess_scoring, because that might remove some samples
-        self.extract_nansamples()
+        self.__extract_nansamples()
 
         #create data draws - assumes we will draw L epochs at a time:
-        self.create_data_draws()
+        self.__create_data_draws()
 
         #send everything to torch tensors:
         self.data_arrays=[torch.tensor(data, dtype=torch.float32)
                           for data in self.data_arrays]
-        if len(self.scoring_paths)>0:
-            self.scoring_arrays=[torch.tensor(scoring, dtype=torch.float32)
-                                  for scoring in self.scoring_arrays]
 
-    def extract_nansamples(self):
+    def __extract_nansamples(self):
         '''Extracts 'nansamples' from the data arrays to bring them back
         to correct size, and keep track of all-nan epochs. If data is not integer
         number of epochs, the trailing samples are ignored.'''
@@ -145,7 +103,7 @@ class sleep_dataset_from_paths(torch.utils.data.Dataset):
             self.nanEpochs.append(nanEpochs)
 
 
-    def create_data_draws(self):
+    def __create_data_draws(self):
         '''Creates a list of indices for drawing data from the dataset.
         Allows __getitem__ to ignore epochlength and number of files'''
         self.dataDraws=[]
@@ -156,35 +114,45 @@ class sleep_dataset_from_paths(torch.utils.data.Dataset):
 
         self.dataDraws=np.array(self.dataDraws)
 
-    def preprocess_data(self,data,sfreq):
+    def __preprocess_data(self,data,sfreq):
         '''Preprocess data to be in line with usleep'''
 
-        nansamples=np.isnan(data)
-        data[nansamples]=0
-        data=resample_channel(data, 128, sfreq, axis=1)
-        nansamples=resample_channel(nansamples.astype(float), 128, sfreq, axis=1)>.5
-        data=scale_channel_manual(data)
-        data=clip_channels(data)
+        output_data=[]
+        output_nansamples=[]
+
+        for i in range(data.shape[0]):
+            channel_data=data[i,:]
+
+            nansamples=np.isnan(channel_data)
+            channel_data[nansamples]=0
+
+            channel_data = remove_dc(channel_data)
+
+            #resampling both data and nansamples:
+            channel_data = resample_channel(channel_data,
+                                    output_rate=128,
+                                    source_sample_rate=sfreq)
+            nansamples=resample_channel(nansamples.astype(float),
+                                        output_rate=128,
+                                    source_sample_rate=sfreq)>.5
+
+            if self.fsets != None:
+                channel_data = filter_channel(channel_data, 128, self.fsets)
+
+            channel_data = scale_channel(channel_data)
+            channel_data = clip_channel(channel_data)
+
+            output_data.append(channel_data)
+            output_nansamples.append(nansamples)
+
+        output_data=np.array(output_data)
+        output_nansamples=np.array(output_nansamples)
 
         #return data with nansamples. nansamples are removed again later:
-        return np.vstack((data,nansamples))
-
-    def cutData(self,idx,start,end):
-        '''Cuts data to a specific range'''
-        self.data_arrays[idx]=self.data_arrays[idx][:,start:end]
-
-    def preprocess_scoring_default(self,idx):
-        '''Default scoring loading function'''
-        scoring=pd.read_csv(self.scoring_paths[idx],sep='/t')
-
-        #cut data array to match scored duration:
-        scoringStart=scoring.iloc[0,0]
-        self.data_arrays[idx]=self.data_arrays[idx][:,scoringStart:]
-
-        self.scoring_arrays.append(scoring.iloc[:,2].values)
+        return np.vstack((output_data,output_nansamples))
 
     def open_eeg_file(filename, preload=True):
-        '''Opens data files. Add more cases if needed.'''
+        '''Opens data files. Supports .set, .edf and .vhdr files. Returns an MNE Raw object.'''
         if filename.endswith('.set'):
             return mne.io.read_raw_eeglab(filename,preload=preload,verbose=False)
         elif filename.endswith('.edf'):
@@ -211,75 +179,16 @@ class sleep_dataset_from_paths(torch.utils.data.Dataset):
 
         assert x.shape[1]==self.epochLength*self.L
 
-        if len(self.scoring_paths)>0:
-            y = self.scoring_arrays[fileIdx][epochIdx:epochIdx+self.L]
-            return x,y,[fileIdx,sampleIdx]
-        else:
-            return x,{'dataSet':0,'file':fileIdx,'sample':sampleIdx}
+        return x,{'dataSet':0,'file':fileIdx,'sample':sampleIdx}
 
     def get_full_record(self, fileIdx):
         '''Returns a full record of data. Used for validation and testing.'''
-
         x = self.data_arrays[fileIdx]
-
-        if len(self.scoring_paths)>0:
-            y = self.scoring_arrays[fileIdx]
-            return x,y,fileIdx
-        else:
-            return x,fileIdx
+        
+        return x,fileIdx
 
     def __getitem__(self, idx):
         if self.fullRecords:
             return self.get_full_record(idx)
         else:
             return self.get_minibatch(idx)
-
-    def saveToHDF5(self,hdf5File):
-        """
-            Save the dataset to a hdf5 file.
-            Adds '.hdf5' to the end of the filename if it is not already there.
-
-        """
-        #it turns out to be convenvient to save the sizes of the data arrays as well:
-        self.data_sizes=[data.shape for data in self.data_arrays]
-
-        with h5py.File(hdf5File, "w") as f:
-            for key,value in self.__dict__.items():
-                if isinstance(value,list):
-                    for idx, data in enumerate(value):
-                        f.create_dataset(key+'/'+str(idx),data=data)
-                elif isinstance(value,int):
-                    f.create_dataset(key,data=value,shape=(1,))
-                elif isinstance(value,range):
-                    temp=np.asarray(value)
-                    f.create_dataset(key,data=temp,shape=temp.shape)
-                elif value is None:
-                    f.create_dataset(key,data=value,shape=(0,))
-                elif isinstance(value,types.FunctionType):
-                    pass
-                else:
-                    f.create_dataset(key,data=value,shape=value.shape)
-
-    def constructFromHDF5(self,hdf5File):
-        '''If the constructor is fed an hdf5-file'''
-        # load all keys from hdf5 file into dataset:
-        with h5py.File(hdf5File, "r") as f:
-            for key,value in f.items():
-                if isinstance(value,h5py.Group):
-                    self.__dict__[key]=[]
-                    for subkey in value .keys():
-                        self.__dict__[key].append(f[key][subkey][...])
-                else:
-                    if value.shape[0]==1:
-                        self.__dict__[key]=value[0]
-                    else:
-                        self.__dict__[key]=value[...]
-
-        #convert to torch tensors:
-        self.data_arrays=[torch.tensor(data, dtype=torch.float32) for data in self.data_arrays]
-        if len(self.scoring_paths)>0:
-            self.scoring_arrays=[torch.tensor(scoring, dtype=torch.float32) for scoring in self.scoring_arrays]
-
-        #check that data array sizes are still correct:
-        for idx,data in enumerate(self.data_arrays):
-            assert (data.shape==self.data_sizes[idx]).all()
