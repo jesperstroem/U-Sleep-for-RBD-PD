@@ -12,14 +12,12 @@ REPO_ROOT = Path(__file__).parent.parent
 class TestWeights:
     def test_pretrained_model_exists(self):
         assert (REPO_ROOT / "weights" / "Pretrained_Model.ckpt").exists(), (
-            "Pretrained_Model.ckpt not found in weights/. "
-            "Make sure the weights are committed to the repository."
+            "Pretrained_Model.ckpt not found in weights/. Make sure the weights are committed to the repository."
         )
 
     def test_generalized_model_exists(self):
         assert (REPO_ROOT / "weights" / "Generalized_Model.ckpt").exists(), (
-            "Generalized_Model.ckpt not found in weights/. "
-            "Make sure the weights are committed to the repository."
+            "Generalized_Model.ckpt not found in weights/. Make sure the weights are committed to the repository."
         )
 
 
