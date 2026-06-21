@@ -45,8 +45,8 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install build frontend
-        run: pip install build
+      - name: Install build frontend and backend
+        run: pip install build "setuptools>=61.0"
 
       - name: Build wheel
         run: python -m build --wheel --no-isolation
@@ -58,13 +58,11 @@ jobs:
           path: dist/*.whl
           retention-days: 7
 
-  # ── 3. Structural tests (no private GitLab access required) ───────────────
-  # NOTE: The two core dependencies (sleep_preprocessing_pipeline and
-  # ml_architectures) live on a private GitLab instance (gitlab.au.dk) that
-  # is not reachable from GitHub Actions runners.  These tests therefore only
-  # check things that are verifiable without those packages: file structure,
-  # packaging metadata, and notebook correctness.  Install the private
-  # packages manually in your local environment to run the full demo.
+  # ── 3. Structural tests (no heavy deps required) ──────────────────────────
+  # NOTE: CSDP and mlarchitectures pull in heavy ML dependencies (PyTorch,
+  # lightning, mlflow, etc.) that are too slow to install on every CI run.
+  # These tests check file structure, packaging metadata, and notebook
+  # correctness without installing those packages.
   test:
     name: Structural Tests
     runs-on: ubuntu-latest
