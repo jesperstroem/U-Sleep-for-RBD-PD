@@ -1,69 +1,147 @@
 # Automatic Sleep Staging for RBD and PD Populations
 
-This repository will show you how to install and use the U-Sleep model which has been finetuned towards individuals with REM Sleep Behavior Disorder (RBD) and Parkinson's Disease (PD).
+[![CI](https://github.com/jesperstroem/U-Sleep-for-RBD-PD/actions/workflows/ci.yml/badge.svg)](https://github.com/jesperstroem/U-Sleep-for-RBD-PD/actions/workflows/ci.yml)
 
-Two different models exist:
-1. The Pretrained Model, which is suitable for the general healthy population.
-2. The Generalized Model, which is suitable for the general healthy population, as well as for individuals with RBD and/or PD.
+This repository shows how to install and use the U-Sleep model fine-tuned for individuals with
+REM Sleep Behavior Disorder (RBD) and Parkinson's Disease (PD).
 
-At the moment, it works with MNE compatible files (.set, .vhdr, .edf).
+Two model variants are included in `weights/`:
 
-The code has been tested on a local Windows machine (CPU) and a larger computing cluster (NVIDIA GPU, CUDA 11.8).
+| Model | Suitable for |
+|-------|-------------|
+| `Pretrained_Model.ckpt` | General healthy population |
+| `Generalized_Model.ckpt` | Healthy population **and** individuals with RBD / PD |
 
-If you encounter any issues or have questions, feel free to write me: js@ece.au.dk
+Supported input formats: any MNE-compatible file (`.set`, `.vhdr`, `.edf`).
 
-## Installation guide:
-To get started, follow these steps:
+Tested on a local Windows machine (CPU) and a compute cluster (NVIDIA GPU, CUDA 11.8).
 
-**1) Make sure that you have the following installed:**
+Questions? Write to: js@ece.au.dk
 
-Conda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html\
-Git: https://git-scm.com/install/
+---
 
-**2) In a terminal, clone this repository and enter the code directory:**
-```console
+## Installation
+
+### Prerequisites
+
+- [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+- [Git](https://git-scm.com/install/)
+
+### Step 1 — Clone the repository
+
+```bash
 git clone https://github.com/jesperstroem/U-Sleep-for-RBD-PD
 cd U-Sleep-for-RBD-PD
 ```
 
-**3) Create a new conda environment and activate it**
+### Step 2 — Create and activate a conda environment
 
-```console
-conda create -n <your_environment_name> python=3.10
-conda activate <your_environment_name>
+```bash
+conda create -n usleep-rbdpd python=3.10
+conda activate usleep-rbdpd
 ```
 
-**4) Install PyTorch version 2.0.1:**
+### Step 3 — Install PyTorch
 
-Now you need to install PyTorch - the installation differs depending if you have a GPU or CPU available. If in doubt - just install the CPU version.
+PyTorch must be installed **before** the package so pip picks the correct CPU or GPU wheel.
+Choose **one** of the following:
 
-Run only **one** of the following commands:
-
-**4A) GPU**:
-
-```console
-python -m pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+**GPU (CUDA 11.8):**
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-**4B) CPU**:
-
-```console
-python -m pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
+**CPU only:**
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
-**5) Install PyTorch Lightning**
+### Step 4 — Install the package
 
-```console
-python -m pip install lightning==2.1.3 torch==2.0.1
+```bash
+pip install .
 ```
 
-**6) Run the following command:**
+This pulls in `sleep_preprocessing_pipeline` and `ml_architectures` from the project's
+private GitLab instance, along with `numpy` and `matplotlib`.
 
-```console
-python -m pip install .
-```
+---
 
 ## Demo
-Now you can start sleep staging your MNE compatible files.
 
-Check the demo notebook (demo.ipynb) for an example of how to use the model and the different weights.
+Open `demo.ipynb` in Jupyter to run sleep staging on your own MNE-compatible file.
+The notebook walks through:
+
+1. Exploring available channels in your file
+2. Building a dataset and running inference
+3. Plotting the predicted hypnogram
+4. Visualising per-stage confidence scores
+5. Inspecting the sleep-stage distribution
+6. Comparing the Pretrained and Generalized models side-by-side
+
+Start Jupyter with:
+
+```bash
+pip install jupyter
+jupyter notebook demo.ipynb
+```
+
+---
+
+## Development Workflow
+
+### Install dev tools
+
+```bash
+pip install ".[dev]"
+```
+
+### Lint and format
+
+```bash
+ruff check .          # lint
+ruff format .         # auto-format
+ruff format --check . # format check only (non-destructive)
+```
+
+### Run tests
+
+```bash
+pytest tests/ -v
+```
+
+### Pre-commit hooks (recommended)
+
+```bash
+pip install pre-commit
+pre-commit install     # runs ruff automatically before each commit
+```
+
+---
+
+## CI/CD
+
+Every push and pull request triggers the GitHub Actions pipeline:
+
+- **Lint & Format** — Ruff (no external deps, ~30 s)
+- **Build Wheel** — validates `pyproject.toml` packaging
+- **Structural Tests** — checks weights, notebook structure, and packaging (no private deps)
+
+See [docs/ci-cd.md](docs/ci-cd.md) for full details.
+
+---
+
+## Project Structure
+
+```
+U-Sleep-for-RBD-PD/
+├── weights/
+│   ├── Pretrained_Model.ckpt   # General population model
+│   └── Generalized_Model.ckpt  # RBD/PD-adapted model
+├── demo.ipynb                  # End-to-end inference demo
+├── pyproject.toml              # Package metadata and tooling config
+├── .pre-commit-config.yaml     # Pre-commit hooks
+├── .github/workflows/ci.yml    # GitHub Actions CI pipeline
+├── tests/                      # Structural tests (no external deps)
+└── docs/ci-cd.md               # CI/CD documentation
+```

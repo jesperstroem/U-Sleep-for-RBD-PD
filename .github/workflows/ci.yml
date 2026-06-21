@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ── 1. Lint & format (no heavy deps — runs in ~30 s) ─────────────────────
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install ruff
+        run: pip install "ruff>=0.9"
+
+      - name: Check linting (ruff check)
+        run: ruff check .
+
+      - name: Check formatting (ruff format --check)
+        run: ruff format --check .
+
+  # ── 2. Build wheel (validates packaging metadata — no runtime deps needed) ─
+  build:
+    name: Build Wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build frontend
+        run: pip install build
+
+      - name: Build wheel
+        run: python -m build --wheel --no-isolation
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ github.sha }}
+          path: dist/*.whl
+          retention-days: 7
+
+  # ── 3. Structural tests (no private GitLab access required) ───────────────
+  # NOTE: The two core dependencies (sleep_preprocessing_pipeline and
+  # ml_architectures) live on a private GitLab instance (gitlab.au.dk) that
+  # is not reachable from GitHub Actions runners.  These tests therefore only
+  # check things that are verifiable without those packages: file structure,
+  # packaging metadata, and notebook correctness.  Install the private
+  # packages manually in your local environment to run the full demo.
+  test:
+    name: Structural Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dev dependencies only (skip private GitLab deps)
+        run: pip install "pytest>=8.0"
+
+      - name: Run structural tests
+        run: pytest tests/ -v

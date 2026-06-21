@@ -36,4 +36,7 @@ lseqsleepnet_pytorch/pytorch_datasets/datastream/
 lseq_results/THES-348/metrics/
 usleep/*
 build/
-commonsleepdatapipeline.egg-info/
+dist/
+*.egg-info/
+.venv/
+venv/
